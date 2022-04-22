@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-# LogManager::Rsync
-# compatible with Ruby 2.0.0
-#
-# (c) 2019 Kyoto University of Education
-# The MIT License
-# https://opensource.org/licenses/MIT
-
 # TODO
 # multiple sources required by ssh forced-commands-only
 

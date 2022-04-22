@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-# = LogManager::Clean
-# compatible with Ruby 2.0.0
-#
-# Copyright 2019 Kyoto University of Education
-# The MIT License
-# https://opensource.org/licenses/MIT
-
 require 'logger'
 
 require 'log_manager/command/base'
