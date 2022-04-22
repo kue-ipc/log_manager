@@ -30,26 +30,26 @@ subcommand options
       parser = OptionParser.new
 
       opts = {}
-      parser.on('-c CONFIG') { |v| opts[:config_path] = v} 
+      parser.on('-c CONFIG') { |v| opts[:config_path] = v }
 
-      subparsers = Hash.new do |h, k|
-        $stderr.puts "No such subcommand: #{k}"
+      subparsers = Hash.new do |_h, k|
+        warn "No such subcommand: #{k}"
         exit 1
       end
 
       subparsers['config'] = OptionParser.new
 
       subparsers['clean'] = OptionParser.new
-      subparsers['clean'].on('-n') { opts[:noop] = true}
+      subparsers['clean'].on('-n') { opts[:noop] = true }
 
       subparsers['rsync'] = OptionParser.new
-      subparsers['rsync'].on('-h HOST') { |v| opts[:host] = v}
-      subparsers['rsync'].on('-n') { opts[:noop] = true}
+      subparsers['rsync'].on('-h HOST') { |v| opts[:host] = v }
+      subparsers['rsync'].on('-n') { opts[:noop] = true }
 
       subparsers['scp'] = OptionParser.new
-      subparsers['scp'].on('-h HOST') { |v| opts[:host] = v}
-      subparsers['scp'].on('-n') { opts[:noop] = true}
-     
+      subparsers['scp'].on('-h HOST') { |v| opts[:host] = v }
+      subparsers['scp'].on('-n') { opts[:noop] = true }
+
       parser.order!(argv)
       if argv.empty?
         puts HELP_MESSAGE

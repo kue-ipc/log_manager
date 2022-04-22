@@ -37,7 +37,7 @@ module LogManager
         if @excludes && @excludes.any? { |ptn| File.fnmatch?(ptn, name) }
           return false
         end
-        
+
         true
       end
 
@@ -99,7 +99,8 @@ module LogManager
             entries.each do |e|
               compress_and_delete(File.join(path, e))
             end
-            if path != @config[:root_dir] && (Dir.entries(path) - ['.', '..']).empty?
+            if path != @config[:root_dir] &&
+               (Dir.entries(path) - ['.', '..',]).empty?
               log_info("remove an empty dir: #{path}")
               remove_dir(path)
             end
@@ -107,7 +108,7 @@ module LogManager
             log_info("skip another type: #{path}")
           end
         end
-      rescue StandardError => e
+      rescue => e
         log_error("error occured #{e.class}: #{path}")
         log_error("error message: #{e.message}")
         raise

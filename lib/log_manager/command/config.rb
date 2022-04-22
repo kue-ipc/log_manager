@@ -58,6 +58,7 @@ module LogManager
         @subcommand = opts[:subcommand]
         @config_path = opts[:config_path] || search_config_path
         raise Error, 'not found config file' if @config_path.nil?
+
         @config = hash_deep_merge(DEFAULT_CONFIG, load_config(@config_path))
 
         if @config[:logger][:file] && !FileTest.directory?(File.dirname(@config[:logger][:file]))
@@ -66,7 +67,7 @@ module LogManager
 
         @logger = Logger.new(@config[:logger][:file] || STDERR,
                              @config[:logger][:shift])
-        @logger.level = 
+        @logger.level =
           case @config[:logger][:level]
           when Integer then @config[:logger][:level]
           when /^UNKNOWN$/i then Logger::UNKNOWN
@@ -78,15 +79,16 @@ module LogManager
           else
             raise Error, "unknown logger level - #{@config[:logger][:level]}"
           end
-        
+
         log_info(opts.to_json)
       end
 
       def search_config_path
-        config_path_list = [File.expand_path('../../../etc/log_manager.yml', __dir__)] + %w[
-          /usr/local/etc/log_manager.yml
-          /usr/etc/log_manager.yml
-          /etc/log_manager.yml
+        config_path_list = [
+          File.expand_path('../../../etc/log_manager.yml', __dir__),
+          '/usr/local/etc/log_manager.yml',
+          '/usr/etc/log_manager.yml',
+          '/etc/log_manager.yml',
         ]
         config_path_list.find do |path|
           FileTest.file?(path)

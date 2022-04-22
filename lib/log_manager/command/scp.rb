@@ -26,13 +26,14 @@ module LogManager
       def initialize(host: nil, **opts)
         super
         @host = host
-        @save_dir = File.expand_path(@config[:scp][:save_dir], @config[:root_dir])
+        @save_dir = File.expand_path(@config[:scp][:save_dir],
+                                     @config[:root_dir])
         @ssh_cmd = @config[:scp][:ssh_cmd]
         @scp_cmd = @config[:scp][:scp_cmd]
       end
 
       def check_remote_path(path)
-        unless /\A[\w\-\/.+_]+\z/ =~ path
+        unless %r{\A[\w\-/.+_]+\z} =~ path
           raise Error, "Invalid remote path: #{path}"
         end
       end
@@ -40,7 +41,7 @@ module LogManager
       def all_sync
         @config[:scp][:hosts].each do |host|
           next if @host && @host != host[:name]
-          
+
           host_sync(**host)
         end
       end
@@ -57,7 +58,7 @@ module LogManager
           log_error('no "host" in host')
           return
         end
-        
+
         remote = "#{user}@#{host}"
         host_save_dir = File.join(@save_dir, name)
 
@@ -85,8 +86,7 @@ module LogManager
           remote,
           dir,
           target_save_dir,
-          **opts
-        )
+          **opts)
       end
 
       def sync(remote, src, dst, includes: nil, excludes: nil)
@@ -106,11 +106,11 @@ module LogManager
 
             name = remote_file[:name]
             if includes &&
-               includes.none?  { |ptn| File.fnmatch?(ptn, name) }
+              includes.none? { |ptn| File.fnmatch?(ptn, name) }
               next
             end
             if excludes &&
-               excludes.any?  { |ptn| File.fnmatch?(ptn, name) }
+              excludes.any? { |ptn| File.fnmatch?(ptn, name) }
               next
             end
 
@@ -141,7 +141,7 @@ module LogManager
               '-p',
               '-q',
               "#{remote}:#{src}/#{name}",
-              "#{dst}/#{name}"
+              "#{dst}/#{name}",
             ]
             run_cmd(cmd)
           end
@@ -185,10 +185,10 @@ module LogManager
         unless FileTest.directory?(dir)
           log_warn("not directory: #{dir}")
           return []
-        end 
+        end
 
         Dir.entries(dir)
-          .reject { |name| ['.', '..'].include?(name)}
+          .reject { |name| ['.', '..'].include?(name) }
           .map do |name|
             path = File.join(dir, name)
             stat = File.stat(path)

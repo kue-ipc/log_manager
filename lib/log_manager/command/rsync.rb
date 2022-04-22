@@ -23,14 +23,15 @@ module LogManager
       def initialize(host: nil, **opts)
         super
         @host = host
-        @save_dir = File.expand_path(@config[:rsync][:save_dir], @config[:root_dir])
+        @save_dir = File.expand_path(@config[:rsync][:save_dir],
+                                     @config[:root_dir])
         @rsync_cmd = @config[:rsync][:cmd]
       end
 
       def all_sync
         @config[:rsync][:hosts].each do |host|
           next if @host && @host != host[:name]
-          
+
           host_sync(**host)
         end
       end
@@ -47,7 +48,7 @@ module LogManager
           log_error('no "host" in host')
           return
         end
-        
+
         remote = "#{user}@#{host}"
         host_save_dir = File.join(@save_dir, name)
 
@@ -75,8 +76,7 @@ module LogManager
           remote,
           dir,
           target_save_dir,
-          **opts
-        )
+          **opts)
       end
 
       def sync(remote, src, dst, includes: nil, excludes: nil)
@@ -93,7 +93,7 @@ module LogManager
             @rsync_cmd,
             *opts,
             "#{remote}:#{src}/",
-            "#{dst}/"
+            "#{dst}/",
           ]
           run_cmd(cmd, noop: false)
         rescue => e
