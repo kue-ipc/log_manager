@@ -164,11 +164,11 @@ module LogManager
 
         stdout.lines
           .drop(1) # drop first line
-          .map { |line| parse_ls_line(line) }
+          .map { |line| parse_ls_line(line, dir) }
           .reject { |e| ['.', '..'].include?(e[:name]) }
       end
 
-      def parse_ls_line(line)
+      def parse_ls_line(line, dir)
         list = line.split
         {
           name: list[8],
