@@ -65,8 +65,8 @@ module LogManager
           FileUtils.mkpath(File.dirname(@config[:logger][:file]))
         end
 
-        @logger = Logger.new(@config[:logger][:file] || STDERR,
-                             @config[:logger][:shift])
+        logger_file = File.expand_path(@config[:logger][:file], @config[:root_dir])
+        @logger = Logger.new(logger_file, @config[:logger][:shift])
         @logger.level =
           case @config[:logger][:level]
           when Integer then @config[:logger][:level]
