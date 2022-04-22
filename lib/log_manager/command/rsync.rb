@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 # TODO
-# multiple sources required by ssh forced-commands-only
+# * multiple sources required by ssh forced-commands-only
+# * noop on '-n' mode
 
 require 'log_manager/command/base'
 
@@ -95,7 +96,8 @@ module LogManager
             "#{remote}:#{src}/",
             "#{dst}/",
           ]
-          run_cmd(cmd, noop: false)
+          # run_cmd(cmd, noop: false)
+          run_cmd(cmd)
         rescue => e
           log_error("error message: #{e.message}")
         end
