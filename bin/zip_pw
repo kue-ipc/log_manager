@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+
+# simulate zip command for Windows (powershell)
+
+require 'optparse'
+
+# check powershell
+if `pwsh -v 2>&1` && $?.success?
+  powershell = 'pwsh'
+elsif `powershell -? 2>&1` && $?.success?
+  powershell = 'powershell'
+else
+  warn 'Powershell is not found'
+  warn 'Please install powershell'
+  exit 1
+end
+
+# parser
+parser = OptionParser.new
+opts = {}
+parser.on('-m', '--move', &:itself)
+parser.on('-0') { opts[:level] = 'NoCompression'}
+parser.on('-1') { opts[:level] = 'Fastest'}
+parser.on('-2') { opts[:level] = 'Optimal'}
+parser.on('-3') { opts[:level] = 'Optimal'}
+parser.on('-4') { opts[:level] = 'Optimal'}
+parser.on('-5') { opts[:level] = 'Optimal'}
+parser.on('-6') { opts[:level] = 'Optimal'}
+parser.on('-7') { opts[:level] = 'Optimal'}
+parser.on('-8') { opts[:level] = 'Optimal'}
+parser.on('-9') { opts[:level] = 'Optimal'}
+parser.order!(ARGV, into: opts)
+
+zipfile = ARGV.shift
+files = ARGV
+
+if zipfile.nil? || files.empty?
+  warn 'no zipfile and files'
+  exit 1
+end
+
+cmd = [
+  powershell,
+  '-Command',
+  'Compress-Archive',
+  '-LiteralPath',
+  files.join(','),
+  '-DestinationPath',
+  zipfile,
+  '-Update',
+]
+if opts[:level]
+  cmd << '-CompressionLevel'
+  cmd << opts[:level]
+end
+
+unless system(*cmd)
+  warn 'failed to compress'
+  exit 1
+end
+
+if opts[:move]
+  File.delete(*files)
+end
