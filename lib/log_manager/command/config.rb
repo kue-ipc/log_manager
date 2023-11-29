@@ -14,10 +14,10 @@ module LogManager
       include Utils
 
       DEFAULT_CONFIG = {
-        root_dir: '/log',
+        root_dir: 'var/log',
 
         logger: {
-          file: '/var/log/log_manarger/log_manager.log',
+          file: 'log_manarger/log_manager.log',
           level: Logger::INFO, # 1
           shift: 'weekly',
         },
@@ -26,21 +26,21 @@ module LogManager
           period_retention: 60 * 60 * 24 * 366 * 2, # 2 years
           period_nocompress: 60 * 60 * 24 * 2,      # 2 days
           compress: {
-            cmd: '/usr/bin/gzip',
+            cmd: 'gzip',
             ext: '.gz',
             ext_list: %w[.gz .bz2 .xz .tgz .tbz .txz .zip .7z .Z],
           },
         },
 
         rsync: {
-          cmd: '/usr/bin/rsync',
+          cmd: 'rsync',
           save_dir: 'rsync',
           hosts: [],
         },
 
         scp: {
-          ssh_cmd: '/usr/bin/ssh',
-          scp_cmd: '/usr/bin/scp',
+          ssh_cmd: 'ssh',
+          scp_cmd: 'scp',
           save_dir: 'scp',
           hosts: [],
         },
@@ -98,7 +98,7 @@ module LogManager
 
       def load_config(config_path = @config_path)
         if config_path && File.file?(config_path)
-          yaml_load_symbolize(IO.read(config_path))
+          YAML.safe_load(IO.read(config_path), symbolize_names: true)
         else
           {}
         end
