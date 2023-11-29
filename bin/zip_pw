@@ -1,64 +1,70 @@
 #!/usr/bin/env ruby
 
-# simulate zip command for Windows (powershell)
+# simulate gzip command for ZIP with powershell
+
+# rubocop: disable Style/GlobalVars
+# rubocop: disable Lint/LiteralAsCondition
 
 require 'optparse'
 
 # check powershell
 if `pwsh -v 2>&1` && $?.success?
-  powershell = 'pwsh'
+  $powershell = 'pwsh'
 elsif `powershell -? 2>&1` && $?.success?
-  powershell = 'powershell'
+  $powershell = 'powershell'
 else
   warn 'Powershell is not found'
   warn 'Please install powershell'
   exit 1
 end
 
+def compress_zip(file, level: nil)
+  raise "not a file: #{file}" unless FileTest.file?(file)
+
+  zipfile = "#{file}.zip"
+  file_stat = File.stat(file)
+
+  cmd = "#{$powershell} -Command -"
+  script = 'Compress-Archive'
+  script << " -LiteralPath \"#{file}\""
+  script << " -DestinationPath \"#{zipfile}\""
+  script << " -CompressionLevel #{level}" if level
+  puts "compress: #{file}"
+  IO.popen(cmd, 'r+') do |io|
+    io.puts script
+    io.close_write
+    print io.gets
+  end
+
+  unless $?.success?
+    warn 'failed to compress'
+    exit 1
+  end
+
+  File.utime(Time.now, file_stat.mtime, zipfile)
+
+  puts "delete: #{file}"
+  File.delete(file)
+end
+
 # parser
 parser = OptionParser.new
 opts = {}
-parser.on('-m', '--move', &:itself)
-parser.on('-0') { opts[:level] = 'NoCompression'}
-parser.on('-1') { opts[:level] = 'Fastest'}
-parser.on('-2') { opts[:level] = 'Optimal'}
-parser.on('-3') { opts[:level] = 'Optimal'}
-parser.on('-4') { opts[:level] = 'Optimal'}
-parser.on('-5') { opts[:level] = 'Optimal'}
-parser.on('-6') { opts[:level] = 'Optimal'}
-parser.on('-7') { opts[:level] = 'Optimal'}
-parser.on('-8') { opts[:level] = 'Optimal'}
-parser.on('-9') { opts[:level] = 'Optimal'}
+parser.on('-0') { opts[:level] = 'NoCompression' }
+parser.on('-1') { opts[:level] = 'Fastest' }
+parser.on('-2') { opts[:level] = 'Optimal' }
+parser.on('-3') { opts[:level] = 'Optimal' }
+parser.on('-4') { opts[:level] = 'Optimal' }
+parser.on('-5') { opts[:level] = 'Optimal' }
+parser.on('-6') { opts[:level] = 'Optimal' }
+parser.on('-7') { opts[:level] = 'Optimal' }
+parser.on('-8') { opts[:level] = 'Optimal' }
+parser.on('-9') { opts[:level] = 'Optimal' }
 parser.order!(ARGV, into: opts)
 
-zipfile = ARGV.shift
-files = ARGV
-
-if zipfile.nil? || files.empty?
-  warn 'no zipfile and files'
-  exit 1
+ARGV.each do |file|
+  compress_zip(file, level: opts[:level])
 end
 
-cmd = [
-  powershell,
-  '-Command',
-  'Compress-Archive',
-  '-LiteralPath',
-  files.join(','),
-  '-DestinationPath',
-  zipfile,
-  '-Update',
-]
-if opts[:level]
-  cmd << '-CompressionLevel'
-  cmd << opts[:level]
-end
-
-unless system(*cmd)
-  warn 'failed to compress'
-  exit 1
-end
-
-if opts[:move]
-  File.delete(*files)
-end
+# rubocop: enable Style/GlobalVars
+# rubocop: enable Lint/LiteralAsCondition

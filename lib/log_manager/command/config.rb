@@ -28,7 +28,7 @@ module LogManager
           compress: {
             cmd: 'gzip',
             ext: '.gz',
-            ext_list: %w[.gz .bz2 .xz .tgz .tbz .txz .zip .7z .Z],
+            ext_list: %w[.gz .bz2 .xz .tgz .tbz .txz .zip .7z],
           },
         },
 
@@ -48,7 +48,9 @@ module LogManager
 
       def self.run(**opts)
         config = Config.new(**opts)
-        puts "config_path #{config.config_path}"
+        if config.config_path
+          puts "# config_path: #{config.config_path}"
+        end
         puts config.config_yaml
       end
 
@@ -57,7 +59,6 @@ module LogManager
       def initialize(**opts)
         @subcommand = opts[:subcommand]
         @config_path = opts[:config_path] || search_config_path
-        raise Error, 'not found config file' if @config_path.nil?
 
         @config = hash_deep_merge(DEFAULT_CONFIG, load_config(@config_path))
 
@@ -125,7 +126,7 @@ module LogManager
       end
 
       def config_yaml
-        YAML.dump(@config)
+        YAML.dump(hash_stringify_names(@config))
       end
     end
   end
