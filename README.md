@@ -10,12 +10,12 @@
 
 ## ライセンス
 
-Copyright 2022 Kyoto University of Education
+Copyright 2022-2023 Kyoto University of Education
 The MIT License
 
 ## 動作環境
 
-* Ruby 2.0 以上
+* Ruby 2.5 以上
 * gzip
 * rsync
 * OpenSSH (ssh, scp)
