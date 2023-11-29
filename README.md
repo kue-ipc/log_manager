@@ -54,7 +54,7 @@ rsyncはSSHを利用します。scp(ssh)と合わせてSSH環境を整えてく�
 * 可能な限り、ログインユーザーはroot以外のユーザーにしてください。
 * rootユーザーでログインする場合は、"sshd_config"でコマンド実行のみにしてください。
 
-    ```
+    ```sshd_config
     PermitRootLogin forced-commands-only
     ```
 
@@ -66,13 +66,13 @@ rsyncはSSHを利用します。scp(ssh)と合わせてSSH環境を整えてく�
 
 通常、リモート側では次のようなコマンドが実行されます。
 
-```
+```shell
 rsync --server --sender -vvulDtprze.iLsfxC . /remote/log/path/
 ```
 
 最後の引数が同期元のディレクトリになります。これを`command`で指定しますが、同期元ディレクトリを複数書くこともできます。
 
-```
+```shell
 rsync --server --sender -vvulDtprze.iLsfxC . /log1 /loge2
 ```
 
