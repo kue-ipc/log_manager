@@ -33,9 +33,9 @@ module LogManager
       end
 
       def check_remote_path(path)
-        unless %r{\A[\w\-/.+_]+\z} =~ path
-          raise Error, "Invalid remote path: #{path}"
-        end
+        return if %r{\A[\w\-/.+_]+\z} =~ path
+
+        raise Error, "Invalid remote path: #{path}"
       end
 
       def all_sync
@@ -90,64 +90,62 @@ module LogManager
       end
 
       def sync(remote, src, dst, includes: nil, excludes: nil)
-        begin
-          check_path(dst)
-          make_dir(dst)
-          remote_list = get_list_remote(remote, src)
-          local_list = get_list_local(dst)
+        check_path(dst)
+        make_dir(dst)
+        remote_list = get_list_remote(remote, src)
+        local_list = get_list_local(dst)
 
-          local_dict = {}
-          local_list.each do |local_file|
-            local_dict[local_file[:name]] = local_file
-          end
-
-          remote_list.each do |remote_file|
-            next unless remote_file[:ftype] == 'file'
-
-            name = remote_file[:name]
-            if includes &&
-              includes.none? { |ptn| File.fnmatch?(ptn, name) }
-              next
-            end
-            if excludes &&
-              excludes.any? { |ptn| File.fnmatch?(ptn, name) }
-              next
-            end
-
-            if (local_file = local_dict[name])
-              if local_file[:ftype] != 'file'
-                log_warn("duplicate with other than file: #{name}")
-                next
-              elsif remote_file[:mtime] <= local_file[:mtime]
-                log_debug("skip a file: #{name}")
-                next
-              end
-            end
-
-            compressed_name = compressed_path(name)
-            if (local_file = local_dict[compressed_name])
-              if local_file[:ftype] != 'file'
-                log_warn("duplicate with other than file (compressed): #{name}")
-                next
-              elsif remote_file[:mtime] <= local_file[:mtime]
-                log_debug("skip a file (compressed): #{name}")
-                next
-              end
-            end
-
-            log_info("copy: #{name}")
-            cmd = [
-              @scp_cmd,
-              '-p',
-              '-q',
-              "#{remote}:#{src}/#{name}",
-              "#{dst}/#{name}",
-            ]
-            run_cmd(cmd)
-          end
-        rescue => e
-          log_error("error message: #{e.message}")
+        local_dict = {}
+        local_list.each do |local_file|
+          local_dict[local_file[:name]] = local_file
         end
+
+        remote_list.each do |remote_file|
+          next unless remote_file[:ftype] == 'file'
+
+          name = remote_file[:name]
+          if includes &&
+             includes.none? { |ptn| File.fnmatch?(ptn, name) }
+            next
+          end
+          if excludes &&
+             excludes.any? { |ptn| File.fnmatch?(ptn, name) }
+            next
+          end
+
+          if (local_file = local_dict[name])
+            if local_file[:ftype] != 'file'
+              log_warn("duplicate with other than file: #{name}")
+              next
+            elsif remote_file[:mtime] <= local_file[:mtime]
+              log_debug("skip a file: #{name}")
+              next
+            end
+          end
+
+          compressed_name = compressed_path(name)
+          if (local_file = local_dict[compressed_name])
+            if local_file[:ftype] != 'file'
+              log_warn("duplicate with other than file (compressed): #{name}")
+              next
+            elsif remote_file[:mtime] <= local_file[:mtime]
+              log_debug("skip a file (compressed): #{name}")
+              next
+            end
+          end
+
+          log_info("copy: #{name}")
+          cmd = [
+            @scp_cmd,
+            '-p',
+            '-q',
+            "#{remote}:#{src}/#{name}",
+            "#{dst}/#{name}",
+          ]
+          run_cmd(cmd)
+        end
+      rescue => e
+        log_error("error message: #{e.message}")
       end
 
       def get_list_remote(remote, dir)

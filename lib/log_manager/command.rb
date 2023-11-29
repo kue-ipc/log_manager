@@ -11,19 +11,19 @@ require 'log_manager/command/scp'
 
 module LogManager
   module Command
-    HELP_MESSAGE = <<-MESSAGE
-Log Manager #{LogManager::VERSION}
-Usage: lmg [options] subcommand [subcommand options]
-subcommand:
-  config      show config yaml
-  clean       clean and compress log
-  rsync       rysnc log from remote
-  scp         scp log from remote
-options:
-  -c CONFIG   specify config
-subcommand options
-  -h HOST     specify host
-  -n          no operation
+    HELP_MESSAGE = <<~MESSAGE
+      Log Manager #{LogManager::VERSION}
+      Usage: lmg [options] subcommand [subcommand options]
+      subcommand:
+        config      show config yaml
+        clean       clean and compress log
+        rsync       rysnc log from remote
+        scp         scp log from remote
+      options:
+        -c CONFIG   specify config
+      subcommand options
+        -h HOST     specify host
+        -n          no operation
     MESSAGE
 
     def self.run(argv)

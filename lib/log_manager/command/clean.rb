@@ -100,7 +100,7 @@ module LogManager
               compress_and_delete(File.join(path, e))
             end
             if path != @config[:root_dir] &&
-               (Dir.entries(path) - ['.', '..',]).empty?
+               (Dir.entries(path) - ['.', '..']).empty?
               log_info("remove an empty dir: #{path}")
               remove_dir(path)
             end
