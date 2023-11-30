@@ -1,7 +1,7 @@
 ---
 root_dir: /log
 logger:
-  file: /var/log/log_manarger/log_manager.log
+  file: /var/log/log_manager/log_manager.log
   level: 1
   shift: weekly
 clean:

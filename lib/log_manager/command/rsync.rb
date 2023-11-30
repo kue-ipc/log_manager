@@ -24,7 +24,7 @@ module LogManager
       def initialize(host: nil, **opts)
         super
         @host = host
-        @save_dir = File.expand_path(@config[:rsync][:save_dir],
+        @save_dir = File.absolute_path(@config[:rsync][:save_dir],
                                      @config[:root_dir])
         @rsync_cmd = @config[:rsync][:cmd]
       end

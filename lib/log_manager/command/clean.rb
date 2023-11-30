@@ -3,6 +3,7 @@
 require 'logger'
 
 require 'log_manager/command/base'
+require 'log_manager/utils/file_stat'
 
 module LogManager
   module Command
@@ -23,6 +24,11 @@ module LogManager
       end
 
       def need_check?(path)
+        unless @config[:clean][:hidden]
+          stat = LogManager::Utils::FileStat.new(path)
+          return false if stat.hidden
+        end
+
         name =
           if @config[:clean][:compress][:ext_list].include?(File.extname(path))
             File.basename(path, File.extname(path))
@@ -30,25 +36,19 @@ module LogManager
             File.basename(path)
           end
 
-        if @includes && @includes.none? { |ptn| File.fnmatch?(ptn, name) }
-          return false
-        end
+        return false if @includes&.none? { |ptn| File.fnmatch?(ptn, name) }
 
-        if @excludes && @excludes.any? { |ptn| File.fnmatch?(ptn, name) }
-          return false
-        end
+        return false if @excludes&.any? { |ptn| File.fnmatch?(ptn, name) }
 
         true
       end
 
       def need_delete?(path)
-        need_check?(path) &&
-          File.stat(path).mtime < @delete_before_time
+        File.stat(path).mtime < @delete_before_time
       end
 
       def need_compress?(path)
-        need_check?(path) &&
-          !@config[:clean][:compress][:ext_list].include?(File.extname(path)) &&
+        !@config[:clean][:compress][:ext_list].include?(File.extname(path)) &&
           File.stat(path).mtime < @compress_before_time
       end
 

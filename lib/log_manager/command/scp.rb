@@ -26,7 +26,7 @@ module LogManager
       def initialize(host: nil, **opts)
         super
         @host = host
-        @save_dir = File.expand_path(@config[:scp][:save_dir],
+        @save_dir = File.absolute_path(@config[:scp][:save_dir],
                                      @config[:root_dir])
         @ssh_cmd = @config[:scp][:ssh_cmd]
         @scp_cmd = @config[:scp][:scp_cmd]
