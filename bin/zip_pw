@@ -33,7 +33,7 @@ def compress_zip(file, level: nil)
   IO.popen(cmd, 'r+') do |io|
     io.puts script
     io.close_write
-    print io.gets
+    print io.read
   end
 
   unless $?.success?

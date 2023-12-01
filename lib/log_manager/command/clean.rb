@@ -3,7 +3,6 @@
 require 'logger'
 
 require 'log_manager/command/base'
-require 'log_manager/utils/file_stat'
 
 module LogManager
   module Command
@@ -24,10 +23,7 @@ module LogManager
       end
 
       def need_check?(path)
-        unless @config[:clean][:hidden]
-          stat = LogManager::Utils::FileStat.new(path)
-          return false if stat.hidden
-        end
+        return false if !@config[:clean][:hidden] && file_stat(path).hidden
 
         name =
           if @config[:clean][:compress][:ext_list].include?(File.extname(path))

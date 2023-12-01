@@ -1,9 +1,19 @@
 require 'yaml'
 
 require_relative 'error'
+require_relative 'utils/disk_stat'
+require_relative 'utils/file_stat'
 
 module LogManager
   module Utils
+    module_function def disk_stat(path)
+      LogManager::Utils::DiskStat.new(path)
+    end
+
+    module_function def file_stat(path)
+      LogManager::Utils::FileStat.new(path)
+    end
+
     module_function def hash_symbolize_names(obj)
       case obj
       when Array

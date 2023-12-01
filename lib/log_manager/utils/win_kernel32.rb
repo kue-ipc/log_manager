@@ -1,31 +1,43 @@
 require 'fiddle/import'
+require 'fiddle/types'
 
 module LogManager
   module Utils
+    # rubocop: disable Naming
     module WinKernel32
       extend Fiddle::Importer
       dlload 'kernel32.dll'
-      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileattributesexw
-      extern 'int GetFileAttributesExW(wchar*, int, void*)'
+
+      # typedef
+
+      # https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types
+      include Fiddle::Win32Types
+      typealias 'LONG', 'long'
+      typealias 'ULONGLONG', 'uint64_t' # unsigned __int64
+      typealias 'LPVOID', 'void *'
+      typealias 'WCHAR', 'wchar_t'
+      typealias 'LPWSTR', 'WCHAR *'
+      typealias 'LPCWSTR', 'const WCHAR *'
+      typealias 'HRESULT', 'LONG'
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-ularge_integer-r1
+      typealias 'ULARGE_INTEGER', 'ULONGLONG' # union
+      typealias 'PULARGE_INTEGER', 'ULARGE_INTEGER *'
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
+      typealias 'FILETIME', 'uint64_t' # struct {DWORD, DWORD}
+
+      # enum
 
       # https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ne-minwinbase-get_fileex_info_levels
+      typealias 'GET_FILEEX_INFO_LEVELS', 'int' # enum
       GetFileExInfoStandard = 0
       GetFileExMaxInfoLevel = 1
 
-      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
-      # https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
-      FileAttributeData = struct(
-        [
-          'unsigned long dwFileAttributes',
-          'unsigned long ftCreationTime_dwLowDateTime',
-          'unsigned long ftCreationTime_dwHighDateTime',
-          'unsigned long ftLastAccessTime_dwLowDateTime',
-          'unsigned long ftLastAccessTime_dwHighDateTime',
-          'unsigned long ftLastWriteTime_dwLowDateTime',
-          'unsigned long ftLastWriteTime_dwHighDateTime',
-          'unsigned long nFileSizeHigh',
-          'unsigned long nFileSizeLow',
-        ])
+      # constant
+
+      FALSE = 0
+      TRUE = 1
 
       # https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants
       FILE_ATTRIBUTE_READONLY              = 0x00000001
@@ -51,8 +63,68 @@ module LogManager
       FILE_ATTRIBUTE_RECALL_ON_OPEN        = 0x00040000
       FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS = 0x00400000
 
+      # struct
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
+      FileAttributeData = struct(
+        [
+          'DWORD dwFileAttributes',
+          'FILETIME ftCreationTime',
+          'FILETIME  ftLastAccessTime',
+          'FILETIME  ftLastWriteTime',
+          'DWORD nFileSizeHigh',
+          'DWORD nFileSizeLow',
+        ])
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-disk_space_information
+      DiskSpaceInformation = struct(
+        [
+          'ULONGLONG ActualTotalAllocationUnits',
+          'ULONGLONG ActualAvailableAllocationUnits',
+          'ULONGLONG ActualPoolUnavailableAllocationUnits',
+          'ULONGLONG CallerTotalAllocationUnits',
+          'ULONGLONG CallerAvailableAllocationUnits',
+          'ULONGLONG CallerPoolUnavailableAllocationUnits',
+          'ULONGLONG UsedAllocationUnits',
+          'ULONGLONG TotalReservedAllocationUnits',
+          'ULONGLONG VolumeStorageReserveAllocationUnits',
+          'ULONGLONG AvailableCommittedAllocationUnits',
+          'ULONGLONG PoolAvailableAllocationUnits',
+          'DWORD SectorsPerAllocationUnit',
+          'DWORD BytesPerSector',
+        ])
+
+      # macro
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/winerror/nf-winerror-succeeded
+      def self.SUCCEEDED(hr)
+        hr >= 0
+      end
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/winerror/nf-winerror-failed
+      def self.FAILED(hr)
+        hr < 0 # rubocop: disable Style/NumericPredicate
+      end
+
+      # funciton
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileattributesexw
+      extern 'BOOL GetFileAttributesExW(LPCWSTR, GET_FILEEX_INFO_LEVELS, ' \
+             'LPVOID)'
+
       # https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
-      extern 'unsigned long GetLastError()'
+      extern 'DWORD GetLastError()'
+
+      # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexw
+      extern 'BOOL GetDiskFreeSpaceExW(LPCWSTR, ' \
+             'PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER)'
+
+      # https://learn.microsoft.com/ja-jp/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew
+      extern 'BOOL GetVolumePathNameW(LPCWSTR, LPWSTR, DWORD)'
+
+      # https://learn.microsoft.com/ja-jp/windows/win32/api/fileapi/nf-fileapi-getdiskspaceinformationw
+      extern 'HRESULT GetDiskSpaceInformationW(LPCWSTR, void *)'
     end
+    # rubocop: enable Naming
   end
 end

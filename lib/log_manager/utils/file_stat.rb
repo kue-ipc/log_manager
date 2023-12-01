@@ -1,4 +1,5 @@
-require_relative 'win_kernel32' if RUBY_PLATFORM =~ /mingw|mswin/
+require_relative 'platform'
+require_relative 'win_kernel32' if LogManager::Utils::Platform.windows?
 
 module LogManager
   module Utils
@@ -9,7 +10,7 @@ module LogManager
         @path = path
         @stat = File.stat(@path)
         @absolute_path = File.absolute_path(@path)
-        if RUBY_PLATFORM =~ /mingw|mswin/
+        if LogManager::Utils::Platform.windows?
           @data = WinKernel32::FileAttributeData.malloc
           result = WinKernel32.GetFileAttributesExW(
             path.gsub('/', '\\').encode(Encoding::UTF_16LE),
