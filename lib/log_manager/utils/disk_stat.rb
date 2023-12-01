@@ -4,26 +4,23 @@ require_relative 'win_kernel32' if LogManager::Utils::Platform.windows?
 module LogManager
   module Utils
     class DiskStat
+      attr_reader :path, :absolute_path, :root_path, :block, :inode
       def initialize(path)
         @path = path
         @absolute_path = File.absolute_path(@path)
 
-        case LogManager::Utils::Platform.platform
-        when :windows
-          @data = DiskStat.disk_data_windows(@absolute_path)
-        when :linux
-          @data = DiskStat.disk_data_linux(@absolute_path)
-        else
-          raise NotImplementedError
-        end
-      end
-
-      def block
-        @data[:block]
-      end
-
-      def inode
-        @data[:inode]
+        data =
+          case LogManager::Utils::Platform.platform
+          when :windows
+            DiskStat.disk_data_windows(@absolute_path)
+          when :linux
+            DiskStat.disk_data_linux(@absolute_path)
+          else
+            raise NotImplementedError
+          end
+        @root_path = data[:path]
+        @block = data[:block]
+        @inode = data[:inode]
       end
 
       def self.disk_data_windows(path)
