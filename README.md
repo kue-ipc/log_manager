@@ -15,10 +15,10 @@ The MIT License
 
 ## 動作環境
 
-* Ruby 2.5 以上
-* gzip
-* rsync
-* OpenSSH (ssh, scp)
+* Ruby 2.5以上、WindowsのみRuby 3.0以上
+* gzip (zip_pwを使用する場合はPowerShellで代替可能)
+* rsync (rsyncを使用する場合のみ)
+* OpenSSH (scpを使用する場合のみ)
 
 ## 使い方
 

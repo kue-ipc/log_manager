@@ -25,8 +25,12 @@ Metrics/ParameterLists:
 Metrics/PerceivedComplexity:
   Max: 14
 
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
 Layout/EndOfLine:
   EnforcedStyle: lf
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
 Layout/FirstHashElementIndentation:
   EnforcedStyle: consistent
 Layout/MultilineMethodCallIndentation:

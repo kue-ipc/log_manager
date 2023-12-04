@@ -1,3 +1,8 @@
+# Ruby version >= 3.0
+unless RUBY_VERSION.split('.').first.to_i >= 3
+  raise "Require Ruby 3.0 or higher, but RUBY_VERSION = #{RUBY_VERSION}"
+end
+
 require 'fiddle/import'
 require 'fiddle/types'
 
@@ -23,9 +28,6 @@ module LogManager
       # https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-ularge_integer-r1
       typealias 'ULARGE_INTEGER', 'ULONGLONG' # union
       typealias 'PULARGE_INTEGER', 'ULARGE_INTEGER *'
-
-      # https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
-      typealias 'FILETIME', 'uint64_t' # struct {DWORD, DWORD}
 
       # enum
 
@@ -65,34 +67,39 @@ module LogManager
 
       # struct
 
+      # https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime
+      Filetime = struct([
+        'DWORD dwLowDateTime',
+        'DWORD dwHighDateTime',
+      ])
+
       # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
-      FileAttributeData = struct(
-        [
-          'DWORD dwFileAttributes',
-          'FILETIME ftCreationTime',
-          'FILETIME  ftLastAccessTime',
-          'FILETIME  ftLastWriteTime',
-          'DWORD nFileSizeHigh',
-          'DWORD nFileSizeLow',
-        ])
+
+      FileAttributeData = struct([
+        'DWORD dwFileAttributes',
+        {ftCreationTime: Filetime},
+        {ftLastAccessTime: Filetime},
+        {ftLastWriteTime: Filetime},
+        'DWORD nFileSizeHigh',
+        'DWORD nFileSizeLow',
+      ])
 
       # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-disk_space_information
-      DiskSpaceInformation = struct(
-        [
-          'ULONGLONG ActualTotalAllocationUnits',
-          'ULONGLONG ActualAvailableAllocationUnits',
-          'ULONGLONG ActualPoolUnavailableAllocationUnits',
-          'ULONGLONG CallerTotalAllocationUnits',
-          'ULONGLONG CallerAvailableAllocationUnits',
-          'ULONGLONG CallerPoolUnavailableAllocationUnits',
-          'ULONGLONG UsedAllocationUnits',
-          'ULONGLONG TotalReservedAllocationUnits',
-          'ULONGLONG VolumeStorageReserveAllocationUnits',
-          'ULONGLONG AvailableCommittedAllocationUnits',
-          'ULONGLONG PoolAvailableAllocationUnits',
-          'DWORD SectorsPerAllocationUnit',
-          'DWORD BytesPerSector',
-        ])
+      DiskSpaceInformation = struct([
+        'ULONGLONG ActualTotalAllocationUnits',
+        'ULONGLONG ActualAvailableAllocationUnits',
+        'ULONGLONG ActualPoolUnavailableAllocationUnits',
+        'ULONGLONG CallerTotalAllocationUnits',
+        'ULONGLONG CallerAvailableAllocationUnits',
+        'ULONGLONG CallerPoolUnavailableAllocationUnits',
+        'ULONGLONG UsedAllocationUnits',
+        'ULONGLONG TotalReservedAllocationUnits',
+        'ULONGLONG VolumeStorageReserveAllocationUnits',
+        'ULONGLONG AvailableCommittedAllocationUnits',
+        'ULONGLONG PoolAvailableAllocationUnits',
+        'DWORD SectorsPerAllocationUnit',
+        'DWORD BytesPerSector',
+      ])
 
       # macro
 

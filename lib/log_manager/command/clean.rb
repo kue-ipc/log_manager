@@ -23,7 +23,7 @@ module LogManager
       end
 
       def need_check?(path)
-        return false if !@config[:clean][:hidden] && file_stat(path).hidden
+        return false if !@config[:clean][:hidden] && file_stat(path).attr.hidden
 
         name =
           if @config[:clean][:compress][:ext_list].include?(File.extname(path))
