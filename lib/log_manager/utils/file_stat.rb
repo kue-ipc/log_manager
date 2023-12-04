@@ -8,13 +8,13 @@ module LogManager
 
       def initialize(path)
         @path = path
-        # @stat = File.stat(@path)
+        @stat = File.stat(@path)
         @absolute_path = File.absolute_path(@path)
         @attr =
           if LogManager::Utils::Platform.windows?
-            FileStat.file_attr_windows(path, @stat)
+            FileStat.file_attr_windows(@path, @stat)
           else
-            FileStat.file_attr_posix(path, @stat)
+            FileStat.file_attr_posix(@path, @stat)
           end
       end
 
@@ -24,8 +24,7 @@ module LogManager
           result = WinKernel32.GetFileAttributesExW(path_wstr,
             WinKernel32::GetFileExInfoStandard, data)
           if result.zero?
-            raise 'Error GetFileAttributesExW, ' \
-                  "Last Error: #{Fiddle.win32_last_error}"
+            raise "Error GetFileAttributesExW: #{Fiddle.win32_last_error}"
           end
           {
             readonly: WinKernel32::FILE_ATTRIBUTE_READONLY.anybits?(
@@ -53,6 +52,7 @@ end
 
 if $0 == __FILE__
   ARGV.each do |path|
-    pp LogManager::Utils::FileStat.new(path)
+    stat = LogManager::Utils::FileStat.new(path)
+    pp stat
   end
 end

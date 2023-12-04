@@ -119,9 +119,6 @@ module LogManager
       extern 'BOOL GetFileAttributesExW(LPCWSTR, GET_FILEEX_INFO_LEVELS, ' \
              'LPVOID)'
 
-      # https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
-      extern 'DWORD GetLastError()'
-
       # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexw
       extern 'BOOL GetDiskFreeSpaceExW(LPCWSTR, ' \
              'PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER)'
