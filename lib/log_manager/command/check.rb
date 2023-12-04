@@ -1,40 +1,37 @@
 require 'log_manager/command/base'
-
+require 'log_manager/utils'
 module LogManager
   module Command
     class Check < Base
-      def self.run(**opts)
-        Check.new(**opts).check
+      def self.command
+        check
       end
 
-      def initialize(**opts)
-        super
+      def self.run(config, **opts)
+        Check.new(config, **opts).run
       end
 
-      def check
-        result = ture
-        stat = disk_stat(@config[:root_dir])
-        if stat.root_path
-          log_info("root_path: #{stat.root_path}")
-        else
-          result = false
-        end
+      def run
+        result = {errors: []}
+        stat = Utils.disk_stat(@config[:root_dir])
 
-        if stat.block
-          block_usage = ((stat.total - stat.avail) * 1000 / stat.total).to_f
-          log_info("block: {total: #{stat.total}, used: #{stat.used}, " \
-                   "available: #{stat.available}, usage: #{block_usage}")
-          if block_usage >= 80
-            result = false
-          end
+        log_info("#{@config[:root_dir]} on #{stat.root_path}")
+        result[:root_dir] = @config[:root_dir]
+        result[:disk_path] = stat.root_path
+
+        result[:block] = stat.block.merge({usage: stat.block_usage})
+        log_info("block: #{result[:block].to_json}")
+        if result[:block][:usage] > @config[:check][:block_threshold]
+          log_warn('block size over limit')
+          result[:errors] << 'block size limit over'
         end
 
         if stat.inode
-          inode_usage = ((stat.total - stat.avail) * 1000 / stat.total).to_f
-          log_info("inode: {total: #{stat.total}, used: #{stat.used}, " \
-                   "available: #{stat.available}, usage: #{inode_usage}")
-          if inode_usage >= 80
-            result = false
+          result[:inode] = stat.inode.merge({usage: stat.inode_usage})
+          log_info("inode: #{result[:inode].to_json}")
+          if result[:inode][:usage] > @config[:check][:inode_threshold]
+            log_warn('inode size over limit')
+            result[:errors] << 'inode size limit over'
           end
         end
 

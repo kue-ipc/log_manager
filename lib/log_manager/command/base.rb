@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'fileutils'
 require 'open3'
 
@@ -8,32 +6,39 @@ require 'log_manager/error'
 module LogManager
   module Command
     class Base
+      def self.command
+        nil
+      end
+
       def initialize(config, noop: false, host: nil, **_opts)
         @config = config
         @noop = noop
         @host = host
-        @command = nil
         log_info('noop mode') if @noop
       end
 
+      def command
+        self.class.command
+      end
+
       def log_fatal(msg)
-        @config.logger.log(Logger::FATAL, msg, @command)
+        @config.log(Logger::FATAL, msg, command)
       end
 
       def log_error(msg)
-        @config.logger.log(Logger::ERROR, msg, @command)
+        @config.log(Logger::ERROR, msg, command)
       end
 
       def log_warn(msg)
-        @config.logger.log(Logger::WARN, msg, @command)
+        @config.log(Logger::WARN, msg, command)
       end
 
       def log_info(msg)
-        @config.logger.log(Logger::INFO, msg, @command)
+        @config.log(Logger::INFO, msg, command)
       end
 
       def log_debug(msg)
-        @config.logger.log(Logger::DEBUG, msg, @command)
+        @config.log(Logger::DEBUG, msg, command)
       end
 
       def check_path(path)

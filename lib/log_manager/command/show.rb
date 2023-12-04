@@ -3,13 +3,12 @@ require 'log_manager/command/base'
 module LogManager
   module Command
     class Show < Base
-      def self.run(config, **opts)
-        Show.new(config, **opts).run
+      def self.command
+        'show'
       end
 
-      def initialize(config, **opts)
-        super
-        @command = :show
+      def self.run(config, **opts)
+        Show.new(config, **opts).run
       end
 
       def run
@@ -18,7 +17,7 @@ module LogManager
         puts @config.dump_config
         {
           path: @config.path,
-          config: @config.config,
+          config: @config.masked_config,
           log_file: @config.log_file,
         }
       end
