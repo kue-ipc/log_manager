@@ -9,7 +9,7 @@ module LogManager
       def initialize(path)
         @path = path
         @stat = File.stat(@path)
-        @absolute_path = File.absolute_path(@path)
+        @absolute_path = File.expand_path(@path)
         @attr =
           if LogManager::Utils::Platform.windows?
             FileStat.file_attr_windows(@path, @stat)

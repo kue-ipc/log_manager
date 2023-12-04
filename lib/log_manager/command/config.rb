@@ -10,7 +10,7 @@ require 'log_manager/utils'
 
 module LogManager
   module Command
-    class Config
+    class ConfigX
       include Utils
 
       DEFAULT_CONFIG = {
@@ -60,13 +60,13 @@ module LogManager
 
         @config = hash_deep_merge(DEFAULT_CONFIG, load_config(@config_path))
 
-        logger_file = File.absolute_path(@config[:logger][:file],
+        logger_file = File.expand_path(@config[:logger][:file],
                                        @config[:root_dir])
         unless FileTest.directory?(File.dirname(logger_file))
           FileUtils.mkpath(File.dirname(logger_file))
         end
 
-        logger_file = File.absolute_path(@config[:logger][:file],
+        logger_file = File.expand_path(@config[:logger][:file],
                                        @config[:root_dir])
         @logger = Logger.new(logger_file, @config[:logger][:shift])
         @logger.level =
@@ -87,7 +87,7 @@ module LogManager
 
       def search_config_path
         config_path_list = [
-          File.absolute_path('../../../etc/log_manager.yml', __dir__),
+          File.expand_path('../../../etc/log_manager.yml', __dir__),
           '/usr/local/etc/log_manager.yml',
           '/usr/etc/log_manager.yml',
           '/etc/log_manager.yml',

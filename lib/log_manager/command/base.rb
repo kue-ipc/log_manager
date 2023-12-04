@@ -8,7 +8,7 @@ require 'log_manager/error'
 
 module LogManager
   module Command
-    class Base < Config
+    class Base < ConfigX
       def initialize(noop: false, **opts)
         super
 

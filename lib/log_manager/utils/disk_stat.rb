@@ -37,7 +37,7 @@ module LogManager
 
       def self.disk_data_windows(path)
         path_wstr = path.gsub('/', '\\').encode(Encoding::UTF_16LE)
-        vol_size = File.absolute_path(path).size + 1
+        vol_size = File.expand_path(path).size + 1
         vol_wstr = ("\0".b * vol_size).encode(Encoding::UTF_16LE)
 
         if WinKernel32.GetVolumePathNameW(path_wstr, vol_wstr, vol_size).zero?
