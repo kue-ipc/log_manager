@@ -41,7 +41,7 @@ module LogManager
       },
     }
 
-    attr_reader :path, :config, :log
+    attr_reader :path, :config, :log_file, :logger
 
     def initialize(path)
       @path = path
@@ -57,7 +57,7 @@ module LogManager
 
       @log_file = File.expand_path(@config[:log][:file], @config[:root_dir])
 
-      unless FileTest.directory?(File.dirname(@log_file))
+      unless FileTest.directory?(File.dirname(log_file))
         FileUtils.mkpath(File.dirname(log_file))
       end
 

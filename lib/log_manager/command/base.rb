@@ -3,17 +3,37 @@
 require 'fileutils'
 require 'open3'
 
-require 'log_manager/command/config'
 require 'log_manager/error'
 
 module LogManager
   module Command
-    class Base < ConfigX
-      def initialize(noop: false, **opts)
-        super
-
+    class Base
+      def initialize(config, noop: false, host: nil, **_opts)
+        @config = config
         @noop = noop
+        @host = host
+        @command = nil
         log_info('noop mode') if @noop
+      end
+
+      def log_fatal(msg)
+        @config.logger.log(Logger::FATAL, msg, @command)
+      end
+
+      def log_error(msg)
+        @config.logger.log(Logger::ERROR, msg, @command)
+      end
+
+      def log_warn(msg)
+        @config.logger.log(Logger::WARN, msg, @command)
+      end
+
+      def log_info(msg)
+        @config.logger.log(Logger::INFO, msg, @command)
+      end
+
+      def log_debug(msg)
+        @config.logger.log(Logger::DEBUG, msg, @command)
       end
 
       def check_path(path)

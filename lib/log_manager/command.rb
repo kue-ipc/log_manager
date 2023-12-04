@@ -3,9 +3,11 @@ require 'optparse'
 
 require 'log_manager'
 require 'log_manager/config'
+require 'log_manager/command/check'
 require 'log_manager/command/clean'
 require 'log_manager/command/rsync'
 require 'log_manager/command/scp'
+require 'log_manager/command/show'
 
 module LogManager
   module Command
@@ -22,10 +24,11 @@ module LogManager
       parser.banner = <<~BANNER
         Usage: #{$0} [options...] commands...
           commands:
+            check                            check log disk
             clean                            clean add compress log
             rsync                            rsync log from remote
             scp                              scp log from remote
-            check                            check log disk
+            show                             show config
           options:
       BANNER
 
@@ -45,7 +48,7 @@ module LogManager
         return 2
       end
 
-      unknown_cmds = cmds - %w[clean rsync scp check]
+      unknown_cmds = cmds - %w[check clean rsync scp show]
 
       unless unknown_cmds.empty?
         warn "unknownt command: #{unknown_cmds.join(', ')}"
@@ -61,65 +64,24 @@ module LogManager
 
       config = Config.new(config_path)
 
-      pp config
-      return 0
-
-      logger_file = File.expand_path(@config[:logger][:file],
-        @config[:root_dir])
-      unless FileTest.directory?(File.dirname(logger_file))
-        FileUtils.mkpath(File.dirname(logger_file))
-      end
-
-      logger_file = File.expand_path(@config[:logger][:file],
-        @config[:root_dir])
-      @logger = Logger.new(logger_file, @config[:logger][:shift])
-      @logger.level =
-        case @config[:logger][:level]
-        when Integer then @config[:logger][:level]
-        when /^UNKNOWN$/i then Logger::UNKNOWN
-        when /^FATAL$/i then Logger::FATAL
-        when /^ERROR$/i then Logger::ERROR
-        when /^WARN$/i then Logger::WARN
-        when /^INFO$/i then Logger::INFO
-        when /^DEBUG$/i then Logger::DEBUG
-        else
-          raise Error, "unknown logger level - #{@config[:logger][:level]}"
-        end
-
-      log_info(opts.to_json)
-
+      results = []
       cmds.each do |cmd|
         case cmd
-        when 'config'
-          Command::Config.run(**opts)
+        when 'check'
+          results << Command::Check.run(config, **opts)
         when 'clean'
-          Command::Clean.run(**opts)
+          results << Command::Clean.run(config, **opts)
         when 'rsync'
-          Command::Rsync.run(**opts)
+          results << Command::Rsync.run(config, **opts)
         when 'scp'
-          Command::Scp.run(**opts)
+          results << Command::Scp.run(config, **opts)
+        when 'show'
+          results << Command::Show.run(config, **opts)
         end
       end
+      pp results
 
-      # parser.order!(argv)
-      # if argv.empty?
-      #   puts HELP_MESSAGE
-      #   exit 1
-      # end
-
-      opts[:subcommand] = argv.shift
-      subparsers[opts[:subcommand]].parse!(argv)
-
-      case opts[:subcommand]
-      when 'config'
-        Command::Config.run(**opts)
-      when 'clean'
-        Command::Clean.run(**opts)
-      when 'rsync'
-        Command::Rsync.run(**opts)
-      when 'scp'
-        Command::Scp.run(**opts)
-      end
+      return 0
     end
   end
 end
