@@ -10,15 +10,37 @@ module LogManager
         nil
       end
 
+      def self.run(config, **opts)
+        new(config, **opts).run
+      end
+
+      attr_reader :result, :errors
+
       def initialize(config, noop: false, host: nil, **_opts)
         @config = config
         @noop = noop
-        @host = host
         log_info('noop mode') if @noop
+        @host = host
+
+        @result = nil
+        @errors = []
       end
 
       def command
         self.class.command
+      end
+
+      def err(msg)
+        log_error(msg)
+        @erros << msg
+      end
+
+      def success?
+        @result && @errors.emtpy?
+      end
+
+      def done?
+        !@result.nil?
       end
 
       def log_fatal(msg)

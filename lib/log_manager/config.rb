@@ -99,16 +99,11 @@ module LogManager
     end
 
     def dump_config
-      YAML.dump(hash_stringify_names(masked_config))
+      YAML.dump(hash_stringify_names(@config))
     end
 
-    def masked_config
-      masked_config = @config
-      if @config.dig(:mail, :smtp, :password)
-        masked_config = hash_deep_merge(masked_config,
-          {mali: {smtp: {password: '********'}}})
-      end
-      masked_config
+    def to_h
+      @config
     end
 
     def log(*args, &block)

@@ -7,19 +7,16 @@ module LogManager
         'show'
       end
 
-      def self.run(config, **opts)
-        Show.new(config, **opts).run
-      end
-
       def run
         log_info('show config')
         puts "# config_path: #{@config.path}"
         puts @config.dump_config
-        {
+        @result = {
           path: @config.path,
-          config: @config.masked_config,
+          config: @config.to_h,
           log_file: @config.log_file,
         }
+        self
       end
     end
   end

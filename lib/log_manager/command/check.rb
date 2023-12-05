@@ -4,38 +4,52 @@ module LogManager
   module Command
     class Check < Base
       def self.command
-        check
-      end
-
-      def self.run(config, **opts)
-        Check.new(config, **opts).run
+        'check'
       end
 
       def run
-        result = {errors: []}
         stat = Utils.disk_stat(@config[:root_dir])
-
         log_info("#{@config[:root_dir]} on #{stat.root_path}")
-        result[:root_dir] = @config[:root_dir]
-        result[:disk_path] = stat.root_path
 
-        result[:block] = stat.block.merge({usage: stat.block_usage})
-        log_info("block: #{result[:block].to_json}")
-        if result[:block][:usage] > @config[:check][:block_threshold]
-          log_warn('block size over limit')
-          result[:errors] << 'block size limit over'
-        end
+        block = stat.block.merge({usage: stat.block_usage})
+        check_block(block)
 
         if stat.inode
-          result[:inode] = stat.inode.merge({usage: stat.inode_usage})
-          log_info("inode: #{result[:inode].to_json}")
-          if result[:inode][:usage] > @config[:check][:inode_threshold]
-            log_warn('inode size over limit')
-            result[:errors] << 'inode size limit over'
-          end
+          inode = stat.inode.merge({usage: stat.inode_usage})
+          check_inode(inode)
+        else
+          inode = nil
+          log_info('no inode')
         end
 
-        result
+        @result = {
+          root_dir: @config[:root_dir],
+          disk_path: stat.root_path,
+          block: block,
+          inode: inode,
+        }
+
+        self
+      end
+
+      def check_block(block)
+        log_info("block: #{block.to_json}")
+        if block[:usage] <= @config[:check][:block_threshold]
+          true
+        else
+          err('block size limit over')
+          false
+        end
+      end
+
+      def check_inode(inode)
+        log_info("inode: #{inode.to_json}")
+        if inode[:usage] <= @config[:check][:inode_threshold]
+          true
+        else
+          err('inode size over limit')
+          false
+        end
       end
     end
   end
