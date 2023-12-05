@@ -31,12 +31,13 @@ module LogManager
       end
 
       def err(msg)
-        log_error(msg)
-        @erros << msg
+        warn msg
+        log_error("ERROR: #{msg}")
+        @errors << msg
       end
 
       def success?
-        @result && @errors.emtpy?
+        @result && @errors.empty?
       end
 
       def done?

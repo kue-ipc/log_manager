@@ -11,7 +11,7 @@ require 'log_manager/command/show'
 
 module LogManager
   module Command
-    def self.run(argv, config_path_list = [])
+    def self.run(_argv, config_path_list = [])
       parser = OptionParser.new
 
       parser.version = LogManager::VERSION
@@ -20,6 +20,7 @@ module LogManager
       parser.on('-h HOST', '--host=HOST', 'speify romote host', &:itself)
       parser.on('-n', '--noop', 'no operation', &:itself)
       parser.on('-m', '--mail', 'send results by mail ', &:itself)
+      parser.on('-s', '--stop', 'stop if failure', &:itself)
 
       parser.banner = <<~BANNER
         Usage: #{$0} [options...] commands...
@@ -32,56 +33,72 @@ module LogManager
           options:
       BANNER
 
-      cmds = nil
+      commands = nil
       opts = {}
       begin
-        cmds = parser.parse(ARGV, into: opts)
+        commands = parser.parse(ARGV, into: opts)
       rescue OptionParser::ParseError => e
         warn e.message
         warn parser.help
-        return 1
+        return 0x10
       end
 
-      if cmds.empty?
+      if commands.empty?
         warn 'no command'
         warn parser.help
-        return 2
+        return 0x11
       end
 
-      unknown_cmds = cmds - %w[check clean rsync scp show]
+      unknown_commands = commands - %w[check clean rsync scp show]
 
-      unless unknown_cmds.empty?
-        warn "unknownt command: #{unknown_cmds.join(', ')}"
-        return 3
+      unless unknown_commands.empty?
+        warn "unknownt command: #{unknown_commands.join(', ')}"
+        return 0x12
       end
 
       config_path_list = [opts[:config]] if opts[:config]
       config_path = config_path_list.find { |path| FileTest.exist?(path) }
       if config_path.nil?
         warn 'config file not found'
-        return 4
+        return 0x13
       end
 
       config = Config.new(config_path)
+      results = run_commands(commands, config, **opts)
 
+      send_mail(results) if opts[:mail]
+
+      if results.all?(&:success?)
+        puts 'success'
+        0
+      else
+        warn 'failure'
+        1
+      end
+    end
+
+    def self.run_commands(commands, config, **opts)
       results = []
-      cmds.each do |cmd|
-        case cmd
-        when 'check'
-          results << Command::Check.run(config, **opts)
-        when 'clean'
-          results << Command::Clean.run(config, **opts)
-        when 'rsync'
-          results << Command::Rsync.run(config, **opts)
-        when 'scp'
-          results << Command::Scp.run(config, **opts)
-        when 'show'
-          results << Command::Show.run(config, **opts)
+      commands.each do |command|
+        results <<
+          case command
+          when 'check' then Command::Check.run(config, **opts)
+          when 'clean' then Command::Clean.run(config, **opts)
+          when 'rsync' then Command::Rsync.run(config, **opts)
+          when 'scp' then Command::Scp.run(config, **opts)
+          when 'show' then Command::Show.run(config, **opts)
+          else raise "unknown command: #{command}"
+          end
+        if opts[:stop] && !results.last.success?
+          warn 'stop by failure'
+          break
         end
       end
-      pp results
+      results
+    end
 
-      return 0
+    def self.send_mail(results)
+      # TODO
     end
   end
 end
