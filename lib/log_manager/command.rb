@@ -11,32 +11,9 @@ require 'log_manager/command/show'
 
 module LogManager
   module Command
-    def self.run(_argv, config_path_list = [])
-      parser = OptionParser.new
-
-      parser.version = LogManager::VERSION
-
-      parser.on('-c CONFIG', '--config=CONFIG', 'specify config', &:itself)
-      parser.on('-h HOST', '--host=HOST', 'speify romote host', &:itself)
-      parser.on('-n', '--noop', 'no operation', &:itself)
-      parser.on('-m', '--mail', 'send results by mail ', &:itself)
-      parser.on('-s', '--stop', 'stop if failure', &:itself)
-
-      parser.banner = <<~BANNER
-        Usage: #{$0} [options...] commands...
-          commands:
-            check                            check log disk
-            clean                            clean add compress log
-            rsync                            rsync log from remote
-            scp                              scp log from remote
-            show                             show config
-          options:
-      BANNER
-
-      commands = nil
-      opts = {}
+    def self.run(argv, config_path_list = [])
       begin
-        commands = parser.parse(ARGV, into: opts)
+        commands, opts = opt_parse(argv)
       rescue OptionParser::ParseError => e
         warn e.message
         warn parser.help
@@ -75,6 +52,33 @@ module LogManager
         warn 'failure'
         1
       end
+    end
+
+    def self.opt_parse(argv)
+      parser = OptionParser.new
+
+      parser.version = LogManager::VERSION
+
+      parser.on('-c CONFIG', '--config=CONFIG', 'specify config', &:itself)
+      parser.on('-h HOST', '--host=HOST', 'speify romote host', &:itself)
+      parser.on('-n', '--noop', 'no operation', &:itself)
+      parser.on('-m', '--mail', 'send results by mail ', &:itself)
+      parser.on('-s', '--stop', 'stop if failure', &:itself)
+
+      parser.banner = <<~BANNER
+        Usage: #{$0} [options...] commands...
+          commands:
+            check                            check log disk
+            clean                            clean add compress log
+            rsync                            rsync log from remote
+            scp                              scp log from remote
+            show                             show config
+          options:
+      BANNER
+
+      opts = {}
+      commands = parser.parse(argv, into: opts)
+      [commands, opts]
     end
 
     def self.run_commands(commands, config, **opts)

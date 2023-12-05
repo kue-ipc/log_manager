@@ -26,6 +26,7 @@ module LogManager
           if result.zero?
             raise "Error GetFileAttributesExW: #{Fiddle.win32_last_error}"
           end
+
           {
             readonly: WinKernel32::FILE_ATTRIBUTE_READONLY.anybits?(
               data.dwFileAttributes),

@@ -7,53 +7,57 @@ require 'log_manager/command/base'
 module LogManager
   module Command
     class Clean < Base
-      def self.run(**opts)
-        Clean.new(**opts).compress_and_delete
-      end
-
-      def initialize(**opts)
-        super
-
-        @now = Time.now
-        @delete_before_time = @now - @config[:clean][:period_retention]
-        @compress_before_time = @now - @config[:clean][:period_nocompress]
-
-        @includes = @config[:clean][:includes]
-        @excludes = @config[:clean][:excludes]
+      def self.command
+        'clean'
       end
 
       def need_check?(path)
-        return false if !@config[:clean][:hidden] && file_stat(path).attr.hidden
+        return false if check_hidden?(path)
 
         name =
-          if @config[:clean][:compress][:ext_list].include?(File.extname(path))
+          if compressed?(path)
             File.basename(path, File.extname(path))
           else
             File.basename(path)
           end
 
-        return false if @includes&.none? { |ptn| File.fnmatch?(ptn, name) }
+        return false if check_not_includes?(name)
 
-        return false if @excludes&.any? { |ptn| File.fnmatch?(ptn, name) }
+        return false if check_excludes?(name)
 
         true
       end
 
-      def need_delete?(path)
-        File.stat(path).mtime < @delete_before_time
+      def check_hidden?(path)
+        !@config.dig(:clean, :hidden) && file_stat(path).attr.hidden
       end
 
-      def need_compress?(path)
-        !@config[:clean][:compress][:ext_list].include?(File.extname(path)) &&
-          File.stat(path).mtime < @compress_before_time
+      def check_not_includes?(name)
+        @config.dig(:clean, :includes)&.none? { |ptn| File.fnmatch?(ptn, name) }
+      end
+
+      def check_excludes?(name)
+        @config.dig(:clean, :excludes)&.any? { |ptn| File.fnmatch?(ptn, name) }
+      end
+
+      def compressed?(path)
+        @config.dig(:clean, :compress, :ext_list).include?(File.extname(path))
+      end
+
+      def need_delete?(path, base_time: Time.now)
+        base_time - File.stat(path).mtime >
+          @config.dig(:clean, :period_retention)
+      end
+
+      def need_compress?(path, base_time: Time.now)
+        return false if compressed?(path)
+
+        base_time - File.stat(path).mtime >
+          @config.dig(:clean, :period_nocompress)
       end
 
       def compress_cmd
-        if @config[:clean][:compress][:cmd].is_a?(String)
-          @config[:clean][:compress][:cmd].split
-        else
-          @config[:clean][:compress][:cmd]
-        end
+        @compress_cmd ||= @config.dig(:clean, :compress, :cmd).split
       end
 
       def compress_file(path)
@@ -68,7 +72,7 @@ module LogManager
         run_cmd(cmd)
       end
 
-      def compress_and_delete(path = @config[:root_dir])
+      def compress_and_delete(path = @config[:root_dir], base_time: Time.now)
         check_path(path)
         begin
           unless FileTest.exist?(path)
@@ -82,10 +86,10 @@ module LogManager
           end
 
           if FileTest.file?(path)
-            if need_delete?(path)
+            if need_delete?(path, base_time: base_time)
               log_info("remove an expired file: #{path}")
               remove_file(path)
-            elsif need_compress?(path)
+            elsif need_compress?(path, base_time: base_time)
               compress_file(path)
             else
               log_debug("skip a file: #{path}")
@@ -93,7 +97,7 @@ module LogManager
           elsif FileTest.directory?(path)
             entries = Dir.entries(path) - %w[. ..]
             entries.each do |e|
-              compress_and_delete(File.join(path, e))
+              compress_and_delete(File.join(path, e), base_time: base_time)
             end
             if path != @config[:root_dir] &&
                (Dir.entries(path) - ['.', '..']).empty?
@@ -108,6 +112,16 @@ module LogManager
         log_error("error occured #{e.class}: #{path}")
         log_error("error message: #{e.message}")
         raise
+      end
+
+      def run
+        base_time = Time.now
+        compress_and_delete(base_time: base_time)
+        @resulrt = {
+          base_time: base_time
+        }
+
+        self
       end
     end
   end
