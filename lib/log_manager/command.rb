@@ -1,5 +1,6 @@
-require 'logger'
 require 'optparse'
+require 'yaml'
+require 'net/smtp'
 
 require 'log_manager'
 require 'log_manager/config'
@@ -43,12 +44,14 @@ module LogManager
       config = Config.new(config_path)
       results = run_commands(commands, config, **opts)
 
-      send_mail(results) if opts[:mail]
+      send_mail(results, config) if opts[:mail]
 
       if results.all?(&:success?)
+        config.info { 'success' }
         puts 'success'
         0
       else
+        config.error { 'failure' }
         warn 'failure'
         1
       end
@@ -101,8 +104,63 @@ module LogManager
       results
     end
 
-    def self.send_mail(results)
-      # TODO
+    def self.send_mail(results, config)
+      result =
+        if results.all?(&:success?)
+          'SUCCEEDED'
+        else
+          'FAILED'
+        end
+      date = Time.now.strftime('%Y-%m-%d')
+      host = `hostname`.chomp
+      subject = "Log Manager [#{host}] {#{date}} #{result}"
+
+      from = config.dig(:mail, :from)
+      to = Array(config.dig(:mail, :to))
+
+      message = <<~MESSAGE
+        Log Manager
+
+        Host: #{host}
+        Date: #{date}
+        Result: #{result}
+        Config: #{config.path}
+        Commands: #{results.map(&:command).join(' ')}
+        ---
+      MESSAGE
+      results.each do |r|
+        message << "Command: #{r.command}\n"
+        if r.success?
+          message << "Result: SUCCESS\n"
+        else
+          message << "Result: FAILURE\n"
+          r.errors.each do |error|
+            message << "Error: #{error}\n"
+          end
+        end
+        message << YAML.dump(r.result)
+        message << "---\n"
+      end
+
+      mail = <<~MAIL
+        From: #{from}
+        To: #{to.join(', ')}
+        Subject: #{subject}
+
+        #{message}
+      MAIL
+
+      begin
+        config.info { 'send mail' }
+        Net::SMTP.start(config.dig(:mail, :smtp, :server),
+          config.dig(:mail, :smtp, :port)) do |smtp|
+          smtp.send_message(mail, from, to)
+        end
+      rescue => e
+        config.error { 'failed to send mail' }
+        config.error { e.message }
+        raise
+      end
     end
   end
 end

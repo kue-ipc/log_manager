@@ -10,6 +10,7 @@ module LogManager
 
       def run
         log_info("root_dir: #{root_dir}")
+        time = Time.now
         stat = Utils.disk_stat(root_dir)
         log_info("root_path: #{stat.root_path}")
 
@@ -20,6 +21,7 @@ module LogManager
         check_inode(inode)
 
         @result = {
+          time: time,
           root_dir: root_dir,
           disk_path: stat.root_path,
           block: block,

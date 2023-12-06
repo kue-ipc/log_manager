@@ -12,7 +12,9 @@ module LogManager
 
       def run
         @result ||= {}
+        @result[:time] = {start: Time.now}
         all_sync
+        @result[:time] = {end: Time.now}
 
         self
       end

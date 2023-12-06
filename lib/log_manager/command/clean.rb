@@ -16,7 +16,7 @@ module LogManager
         base_time = Time.now
         @result ||= {}
         @result[:time] = {
-          base: base_time,
+          start: base_time,
           delete: base_time - @config.dig(:clean, :period_retention),
           copmress: base_time - @config.dig(:clean, :period_nocompress),
         }
@@ -26,6 +26,7 @@ module LogManager
         @config.dig(:clean, :period_nocompress)
 
         compress_and_delete(base_time: base_time)
+        @result[:time][:end] = Time.now
 
         self
       end
