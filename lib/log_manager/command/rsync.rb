@@ -17,16 +17,29 @@ module LogManager
         --rsh=ssh
       ].freeze
 
-      def self.run(**opts)
-        Rsync.new(**opts).all_sync
+      def self.command
+        'rsync'
       end
 
-      def initialize(host: nil, **opts)
-        super
-        @host = host
-        @save_dir = File.expand_path(@config[:rsync][:save_dir],
-                                     @config[:root_dir])
-        @rsync_cmd = @config[:rsync][:cmd]
+      def run
+        log_info('all sync')
+        @result = {hosts: []}
+        all_sync
+
+        self
+      end
+
+      # def initialize(host: nil, **opts)
+      #   super
+      #   @host = host
+      #   @save_dir = File.expand_path(@config[:rsync][:save_dir],
+      #                                @config[:root_dir])
+      #   @rsync_cmd = @config[:rsync][:cmd]
+      # end
+
+      def save_dir
+        @save_dir ||= File.expand_path(@config.dig(:rsync, :save_dir),
+                                        @config[:root_dir])
       end
 
       def all_sync

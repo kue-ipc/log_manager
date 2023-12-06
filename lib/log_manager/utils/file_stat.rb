@@ -1,7 +1,7 @@
 require 'forwardable'
 
-require_relative 'platform'
-require_relative 'win_kernel32' if LogManager::Utils::Platform.windows?
+require 'log_manager/utils/platform'
+require 'log_manager/utils/win_kernel32' if LogManager::Utils::Platform.windows?
 
 module LogManager
   module Utils
@@ -21,9 +21,9 @@ module LogManager
           end
       end
 
-      def_delegators @stat, :mode, :size, :atime, :mtime, :ctime
-      def_delegators @stat, :ftype
-      def_delegators @stat, :readable?, :writable?, :executable?
+      def_delegators :@stat, :mode, :size, :atime, :mtime, :ctime
+      def_delegators :@stat, :ftype
+      def_delegators :@stat, :readable?, :writable?, :executable?
 
       def readonly?
         @attr[:readonly]

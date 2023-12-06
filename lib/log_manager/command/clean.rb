@@ -15,17 +15,27 @@ module LogManager
       def run
         base_time = Time.now
         @result = {
-          base_time: base_time,
+          time: {
+            base: base_time,
+            delete: base_time - @config.dig(:clean, :period_retention),
+            copmress: base_time - @config.dig(:clean, :period_nocompress),
+          },
+          count: {},
         }
+        log_info("time: #{@result[:time].to_json}")
+
+        @config.dig(:clean, :period_retention)
+        @config.dig(:clean, :period_nocompress)
+
         compress_and_delete(base_time: base_time)
 
         self
       end
 
       def count_up(name)
-        @result = {} if @resulst.nil?
-        @result[name] ||= 0
-        @result[name] += 1
+        @result = {count: {}} if @resulst.nil?
+        @result[:count][name] ||= 0
+        @result[:count][name] += 1
       end
 
       def need_check?(path)

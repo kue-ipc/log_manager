@@ -2,12 +2,14 @@ require 'logger'
 require 'yaml'
 require 'json'
 require 'fileutils'
+require 'forwardable'
 
 require 'log_manager/error'
 require 'log_manager/utils'
 
 module LogManager
   class Config
+    extend Forwardable
     include Utils
 
     DEFAULT_CONFIG = {
@@ -66,10 +68,20 @@ module LogManager
         FileUtils.mkpath(File.dirname(@log_file))
       end
 
-      @logger = Logger.new(@log_file, @config[:log][:shift])
+      @logger = Logger.new(@log_file, @config[:log][:shift],
+        progname: 'log_manager')
+      self.log_level = @config.dig(:log, :level)
+    end
+
+    def_delegators :@config, :[], :dig, :fetch, :to_h
+
+    def_delegators :@logger, :log, :progname
+    def_delegators :@logger, :fatal, :error, :warn, :info, :debug, :unknown
+
+    def log_level=(level)
       @logger.level =
-        case @config[:log][:level]
-        when Integer then @config[:log][:level]
+        case level
+        when Integer then level
         when /^UNKNOWN$/i then Logger::UNKNOWN
         when /^FATAL$/i then Logger::FATAL
         when /^ERROR$/i then Logger::ERROR
@@ -78,20 +90,12 @@ module LogManager
         when /^DEBUG$/i then Logger::DEBUG
         else
           raise LogManager::Error,
-            "unknown logger level - #{@config[:log][:level]}"
+            "unknown logger level - #{level}"
         end
     end
 
-    def [](key)
-      @config[key]
-    end
-
-    def dig(*keys)
-      @config.dig(*keys)
-    end
-
-    def fetch(*args, &block)
-      @config.fetch(*args, &block)
+    def log_level
+      @logger.level
     end
 
     def load_config
@@ -100,14 +104,6 @@ module LogManager
 
     def dump_config
       YAML.dump(hash_stringify_names(@config))
-    end
-
-    def to_h
-      @config
-    end
-
-    def log(*args, &block)
-      @logger.log(*args, &block)
     end
   end
 end
