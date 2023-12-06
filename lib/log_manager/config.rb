@@ -75,7 +75,7 @@ module LogManager
     private def check_root_dir(dir)
       raise Error, 'root dir is not set' if dir.nil? || dir.empty?
 
-      path = expand_path(dir)
+      path = File.expand_path(dir)
       unless FileTest.directory?(path)
         raise Error, "root dir is not a directory: #{path}"
       end
