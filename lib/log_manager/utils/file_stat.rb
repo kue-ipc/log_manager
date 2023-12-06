@@ -1,9 +1,12 @@
+require 'forwardable'
+
 require_relative 'platform'
 require_relative 'win_kernel32' if LogManager::Utils::Platform.windows?
 
 module LogManager
   module Utils
     class FileStat
+      extend Forwardable
       attr_reader :path, :absolute_path, :stat, :attr
 
       def initialize(path)
@@ -16,6 +19,26 @@ module LogManager
           else
             FileStat.file_attr_posix(@path, @stat)
           end
+      end
+
+      def_delegators @stat, :mode, :size, :atime, :mtime, :ctime
+      def_delegators @stat, :ftype
+      def_delegators @stat, :readable?, :writable?, :executable?
+
+      def readonly?
+        @attr[:readonly]
+      end
+
+      def hidden?
+        @attr[:hidden]
+      end
+
+      def system?
+        @attr[:system]
+      end
+
+      def arhive?
+        @attr[:archive]
       end
 
       def self.file_attr_windows(path, _stat = nil)

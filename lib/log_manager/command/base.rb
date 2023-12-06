@@ -31,9 +31,15 @@ module LogManager
       end
 
       def err(msg)
-        warn msg
-        log_error("ERROR: #{msg}")
-        @errors << msg
+        if msg.is_a?(Exception)
+          warn msg.full_message
+          log_error("ERROR: #{msg.full_message(highlight: false)}")
+          @errors << msg.message
+        else
+          warn msg
+          log_error("ERROR: #{msg}")
+          @errors << msg
+        end
       end
 
       def success?
@@ -67,13 +73,7 @@ module LogManager
       def check_path(path)
         return if path.is_a?(String) && path.start_with?(@config[:root_dir])
 
-        msg = "path must start with #{@config[:root_dir]}, but: #{path}"
-        log_error(msg)
-        raise Error, msg
-      end
-
-      def compressed_path(path)
-        path + @config[:clean][:compress][:ext]
+        raise Error, "path must start with #{@config[:root_dir]}, but: #{path}"
       end
 
       def make_dir(dir)
@@ -88,22 +88,18 @@ module LogManager
 
       def remove_dir(dir)
         check_path(dir)
-        if FileTest.directory?(dir)
-          log_info("remove a directoy: #{dir}")
-          FileUtils.rmdir(dir, noop: @noop)
-        else
-          log_warn("not a directoy, skip to remove: #{dir}")
-        end
+        raise Error, "not a directoy: #{dir}" unless FileTest.directory?(dir)
+
+        log_info("remove a directoy: #{dir}")
+        FileUtils.rmdir(dir, noop: @noop)
       end
 
       def remove_file(file)
         check_path(file)
-        if FileTest.file?(file)
-          log_info("remove a file: #{file}")
-          FileUtils.rm(file, noop: @noop)
-        else
-          log_warn("not a file, skip to remove: #{file}")
-        end
+        raise Error, "not a file: #{file}" unless FileTest.file?(file)
+
+        log_info("remove a file: #{file}")
+        FileUtils.rm(file, noop: @noop)
       end
 
       def run_cmd(cmd, noop: @noop)

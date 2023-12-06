@@ -8,7 +8,7 @@ module LogManager
       end
 
       def run
-        log_info('show config')
+        log_info("config_path: #{@config.path}")
         puts "# config_path: #{@config.path}"
         puts @config.dump_config
         @result = {

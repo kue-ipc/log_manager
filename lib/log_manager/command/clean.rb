@@ -3,12 +3,33 @@
 require 'logger'
 
 require 'log_manager/command/base'
+require 'log_manager/utils'
 
 module LogManager
   module Command
     class Clean < Base
       def self.command
         'clean'
+      end
+
+      def run
+        base_time = Time.now
+        @result = {
+          base_time: base_time,
+        }
+        begin
+          compress_and_delete(base_time: base_time)
+        rescue => e
+          err(e)
+        end
+
+        self
+      end
+
+      def count_up(name)
+        @result = {} if @resulst.nil?
+        @result[name] ||= 0
+        @result[name] += 1
       end
 
       def need_check?(path)
@@ -29,7 +50,7 @@ module LogManager
       end
 
       def check_hidden?(path)
-        !@config.dig(:clean, :hidden) && file_stat(path).attr.hidden
+        !@config.dig(:clean, :hidden) && Utils.file_stat(path).hidden?
       end
 
       def check_not_includes?(name)
@@ -56,6 +77,10 @@ module LogManager
           @config.dig(:clean, :period_nocompress)
       end
 
+      def compressed_path(path)
+        path + @config.dig(:clean, :compress, :ext)
+      end
+
       def compress_cmd
         @compress_cmd ||= @config.dig(:clean, :compress, :cmd).split
       end
@@ -77,51 +102,47 @@ module LogManager
         begin
           unless FileTest.exist?(path)
             log_warn("skip a removed entry: #{path}")
+            count_up(:not_exsit)
             return
           end
 
           unless need_check?(path)
-            log_info("not covered: #{path}")
+            log_debug("skip an excluded entry: #{path}")
+            count_up(:excluded)
             return
           end
 
           if FileTest.file?(path)
             if need_delete?(path, base_time: base_time)
-              log_info("remove an expired file: #{path}")
+              log_debug("remove an expired file: #{path}")
               remove_file(path)
+              count_up(:remove_file)
             elsif need_compress?(path, base_time: base_time)
+              log_debug("compress an old file: #{path}")
               compress_file(path)
+              count_up(:compress_file)
             else
               log_debug("skip a file: #{path}")
+              count_up(:skip_file)
             end
           elsif FileTest.directory?(path)
-            entries = Dir.entries(path) - %w[. ..]
-            entries.each do |e|
+            log_debug("enter a directory: #{path}")
+            Dir.each_child(path) do |e|
               compress_and_delete(File.join(path, e), base_time: base_time)
             end
-            if path != @config[:root_dir] &&
-               (Dir.entries(path) - ['.', '..']).empty?
-              log_info("remove an empty dir: #{path}")
+
+            if path != @config[:root_dir] && Dir.empty?(path)
+              log_debug("remove an empty dir: #{path}")
               remove_dir(path)
+              count_up(:remove_directory)
+            else
+              count_up(:check_directory)
             end
           else
-            log_info("skip another type: #{path}")
+            log_info("skip an other type: #{path}")
+            count_up(:other)
           end
         end
-      rescue => e
-        log_error("error occured #{e.class}: #{path}")
-        log_error("error message: #{e.message}")
-        raise
-      end
-
-      def run
-        base_time = Time.now
-        compress_and_delete(base_time: base_time)
-        @resulrt = {
-          base_time: base_time
-        }
-
-        self
       end
     end
   end

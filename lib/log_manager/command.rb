@@ -13,16 +13,16 @@ module LogManager
   module Command
     def self.run(argv, config_path_list = [])
       begin
-        commands, opts = opt_parse(argv)
+        commands, opts, help = opt_parse(argv)
       rescue OptionParser::ParseError => e
         warn e.message
-        warn parser.help
+        warn help
         return 0x10
       end
 
       if commands.empty?
         warn 'no command'
-        warn parser.help
+        warn help
         return 0x11
       end
 
@@ -36,7 +36,7 @@ module LogManager
       config_path_list = [opts[:config]] if opts[:config]
       config_path = config_path_list.find { |path| FileTest.exist?(path) }
       if config_path.nil?
-        warn 'config file not found'
+        warn 'not found a config file'
         return 0x13
       end
 
@@ -78,7 +78,7 @@ module LogManager
 
       opts = {}
       commands = parser.parse(argv, into: opts)
-      [commands, opts]
+      [commands, opts, parser.help]
     end
 
     def self.run_commands(commands, config, **opts)
