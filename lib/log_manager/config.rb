@@ -48,21 +48,15 @@ module LogManager
       },
     }
 
-    attr_reader :path, :log_file
+    attr_reader :path, :log_file, :root_dir
 
     def initialize(path)
       @path = path
       @config = hash_deep_merge(DEFAULT_CONFIG, load_config)
 
-      if @config[:root_dir].nil? || @config[:root_dir].empty?
-        raise LogManager::Error,  'no root dir.'
-      end
+      @root_dir = check_root_dir(@config[:root_dir])
 
-      unless FileTest.directory?(@config[:root_dir])
-        raise LogManager::Error,  'root dir is not a directory.'
-      end
-
-      @log_file = File.expand_path(@config[:log][:file], @config[:root_dir])
+      @log_file = File.expand_path(@config[:log][:file], @root_dir)
 
       unless FileTest.directory?(File.dirname(@log_file))
         FileUtils.mkpath(File.dirname(@log_file))
@@ -77,6 +71,17 @@ module LogManager
 
     def_delegators :@logger, :log, :progname
     def_delegators :@logger, :fatal, :error, :warn, :info, :debug, :unknown
+
+    private def check_root_dir(dir)
+      raise Error, 'root dir is not set' if dir.nil? || dir.empty?
+
+      path = expand_path(dir)
+      unless FileTest.directory?(path)
+        raise Error, "root dir is not a directory: #{path}"
+      end
+
+      path
+    end
 
     def log_level=(level)
       @logger.level =

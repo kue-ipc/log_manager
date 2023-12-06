@@ -111,7 +111,7 @@ module LogManager
         nil
       end
 
-      def compress_and_delete(path = @config[:root_dir], base_time: Time.now)
+      def compress_and_delete(path = root_dir, base_time: Time.now)
         check_path(path)
         unless FileTest.exist?(path)
           log_warn("skip a removed entry: #{path}")
@@ -144,7 +144,7 @@ module LogManager
             compress_and_delete(File.join(path, e), base_time: base_time)
           end
 
-          if path != @config[:root_dir] && Dir.empty?(path)
+          if path != root_dir && Dir.empty?(path)
             log_debug("remove an empty dir: #{path}")
             remove_dir(path)
             count_up(:remove_directory)

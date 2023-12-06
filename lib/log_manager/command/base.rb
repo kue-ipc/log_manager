@@ -6,9 +6,10 @@ require 'log_manager/error'
 module LogManager
   module Command
     class Base
-      def self.command
-        nil
-      end
+      # Base is an abstract class
+      # implement menhods in concrete class
+      # - self.cohmand
+      # - run
 
       def self.run(config, **opts)
         new(config, **opts).run
@@ -26,8 +27,16 @@ module LogManager
         @errors = []
       end
 
+      def root_dir
+        @config.root_dir
+      end
+
       def command
         self.class.command
+      end
+
+      def command_dig(*args)
+        @config[command.intern].dig(*args)
       end
 
       def err(msg)
@@ -76,9 +85,9 @@ module LogManager
       end
 
       def check_path(path)
-        return if path.is_a?(String) && path.start_with?(@config[:root_dir])
+        return if path.is_a?(String) && path.start_with?(root_dir)
 
-        raise Error, "path must start with #{@config[:root_dir]}, but: #{path}"
+        raise Error, "path must start with #{root_dir}, but: #{path}"
       end
 
       def make_dir(dir)

@@ -1,13 +1,11 @@
-# frozen_string_literal: true
-
 require 'time'
-require 'log_manager/command/base'
+require 'log_manager/command/sync'
 require 'log_manager/error'
 
 module LogManager
   module Command
-    class Scp < Base
-      REMOTE_LS = 'LANG=C ls -l -a -L --full-time'
+    class Scp < Sync
+      REMOTE_LS = -'LANG=C ls -l -a -L --full-time'
 
       FTYPE_NAMES = {
         'b' => 'blockSpecial',
@@ -17,19 +15,18 @@ module LogManager
         's' => 'socket',
         'p' => 'fifo',
         '-' => 'file',
-      }
+      }.freeze
 
-      def self.run(**opts)
-        Scp.new(**opts).all_sync
+      def self.command
+        'scp'
       end
 
-      def initialize(host: nil, **opts)
-        super
-        @host = host
-        @save_dir = File.expand_path(@config[:scp][:save_dir],
-                                     @config[:root_dir])
-        @ssh_cmd = @config[:scp][:ssh_cmd]
-        @scp_cmd = @config[:scp][:scp_cmd]
+      def ssh_cmd
+        @ssh_cmd ||= command_dig(:ssh_cmd)
+      end
+
+      def scp_cmd
+        @scp_cmd ||= command_dig(:scp_cmd)
       end
 
       def check_remote_path(path)
@@ -38,61 +35,19 @@ module LogManager
         raise Error, "Invalid remote path: #{path}"
       end
 
-      def all_sync
-        @config[:scp][:hosts].each do |host|
-          next if @host && @host != host[:name]
-
-          host_sync(**host)
-        end
-      end
-
-      def host_sync(name: nil, host: nil, user: 'root', targets: [])
-        if name.nil?
-          log_error('no "name" in host')
-          return
-        end
-
-        log_info("sync host: #{name}")
-
-        if host.nil?
-          log_error('no "host" in host')
-          return
-        end
-
-        remote = "#{user}@#{host}"
-        host_save_dir = File.join(@save_dir, name)
-
-        targets.each do |target|
-          target_sync(remote, host_save_dir, **target)
-        end
-      end
-
-      def target_sync(remote, host_save_dir, name: nil, dir: nil, **opts)
-        if name.nil?
-          log_error('no "name" in target')
-          return
-        end
-
-        log_info("sync target: #{name}")
-
-        if dir.nil?
-          log_error('no "dir" in target')
-          return
-        end
-
-        target_save_dir = File.join(host_save_dir, name)
-
-        sync(
-          remote,
-          dir,
-          target_save_dir,
-          **opts)
-      end
-
-      def sync(remote, src, dst, includes: nil, excludes: nil)
+      def sync(src, dst, includes: nil, excludes: nil)
         check_path(dst)
         make_dir(dst)
-        remote_list = get_list_remote(remote, src)
+
+        count = {
+          copy: 0,
+          skip: 0,
+          excluded: 0,
+          other: 0,
+          error: 0,
+        }
+
+        remote_list = get_list_remote(src)
         local_list = get_list_local(dst)
 
         local_dict = {}
@@ -104,54 +59,55 @@ module LogManager
           next unless remote_file[:ftype] == 'file'
 
           name = remote_file[:name]
-          if includes &&
-             includes.none? { |ptn| File.fnmatch?(ptn, name) }
-            next
-          end
-          if excludes &&
-             excludes.any? { |ptn| File.fnmatch?(ptn, name) }
-            next
+          if includes&.none? { |ptn| File.fnmatch?(ptn, name) } ||
+             excludes&.any? { |ptn| File.fnmatch?(ptn, name) }
+            count[:excluded] += 1
           end
 
           if (local_file = local_dict[name])
             if local_file[:ftype] != 'file'
-              log_warn("duplicate with other than file: #{name}")
-              next
+              raise Error, "duplicate with other than file: #{name}"
             elsif remote_file[:mtime] <= local_file[:mtime]
               log_debug("skip a file: #{name}")
+              count[:skip] += 1
               next
             end
           end
 
           log_info("copy: #{name}")
           cmd = [
-            @scp_cmd,
+            scp_cmd,
             '-p',
             '-q',
-            "#{remote}:#{src}/#{name}",
+            "#{src.user}@#{src.hostname}:#{src.path}/#{name}",
             "#{dst}/#{name}",
           ]
-          run_cmd(cmd)
+          _, _, status = run_cmd(cmd)
+          raise "failed to copy: #{name}" unless status.success?
+
+          count[:copy] += 1
+        rescue => e
+          err(e)
+          count[:error] += 1
         end
-      rescue => e
-        log_error("error message: #{e.message}")
+
+        count
       end
 
-      def get_list_remote(remote, dir)
-        check_remote_path(dir)
-        log_debug("get list from remote: #{remote}:#{dir}")
-        ls_cmd = REMOTE_LS + ' -- ' + dir
-        cmd = [@ssh_cmd, remote, ls_cmd]
-        stdout, stderr, status = run_cmd(cmd, noop: false)
+      def get_list_remote(uri)
+        check_remote_path(uri.path)
 
-        unless status.success?
-          log_error("command failed, status: #{status.to_i}")
-          return []
-        end
+        log_debug("get list from remote: #{uri}")
+        remote = "#{uri.user}@#{uri.hostname}"
+        ls_cmd = REMOTE_LS + ' -- ' + uri.path
+        cmd = [ssh_cmd, remote, ls_cmd]
+        stdout, _, status = run_cmd(cmd, noop: false)
+
+        raise Error, "failed to ssh ls: #{uri}" unless status.success?
 
         stdout.lines
           .drop(1) # drop first line
-          .map { |line| parse_ls_line(line, dir) }
+          .map { |line| parse_ls_line(line, uri.path) }
           .reject { |e| ['.', '..'].include?(e[:name]) }
       end
 
@@ -167,15 +123,12 @@ module LogManager
 
       def get_list_local(dir)
         check_path(dir)
+
         log_debug("get list from local: #{dir}")
 
-        unless FileTest.directory?(dir)
-          log_warn("not directory: #{dir}")
-          return []
-        end
+        raise Error, "not a directory: #{dir}" unless FileTest.directory?(dir)
 
-        Dir.entries(dir)
-          .reject { |name| ['.', '..'].include?(name) }
+        Dir.children(dir)
           .map do |name|
             path = File.join(dir, name)
             stat = File.stat(path)

@@ -9,8 +9,8 @@ module LogManager
       end
 
       def run
-        log_info("root_dir: #{@config[:root_dir]}")
-        stat = Utils.disk_stat(@config[:root_dir])
+        log_info("root_dir: #{root_dir}")
+        stat = Utils.disk_stat(root_dir)
         log_info("root_path: #{stat.root_path}")
 
         block = stat.block&.merge({usage: stat.block_usage})
@@ -20,7 +20,7 @@ module LogManager
         check_inode(inode)
 
         @result = {
-          root_dir: @config[:root_dir],
+          root_dir: root_dir,
           disk_path: stat.root_path,
           block: block,
           inode: inode,
