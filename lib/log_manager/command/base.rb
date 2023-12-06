@@ -31,7 +31,12 @@ module LogManager
       end
 
       def err(msg)
-        if msg.is_a?(Exception)
+        case msg
+        when LogManager::Error
+          warn msg.message
+          log_error("ERROR: #{msg.message}")
+          @errors << msg.message
+        when Exception
           warn msg.full_message
           log_error("ERROR: #{msg.full_message(highlight: false)}")
           @errors << msg.message
@@ -111,16 +116,12 @@ module LogManager
 
         stdout, stderr, status = Open3.capture3(*cmd)
 
-        unless stdout.empty?
-          stdout.each_line.with_index do |line, idx|
-            log_debug("--> stdout[#{idx}] : #{line.chomp}")
-          end
+        stdout.each_line.with_index do |line, idx|
+          log_debug("--> stdout[#{idx}] : #{line.chomp}")
         end
 
-        unless stderr.empty?
-          stderr.each_line.with_index do |line, idx|
-            log_warn("--> stderr[#{idx}] : #{line.chomp}")
-          end
+        stderr.each_line.with_index do |line, idx|
+          log_warn("--> stderr[#{idx}] : #{line.chomp}")
         end
 
         if status.success?

@@ -23,12 +23,13 @@ def compress_zip(file, level: nil)
 
   zipfile = "#{file}.zip"
   file_stat = File.stat(file)
+  level = 'Optimal' if level.nil?
 
   cmd = "#{$powershell} -Command -"
-  script = 'Compress-Archive'
-  script << " -LiteralPath \"#{file}\""
-  script << " -DestinationPath \"#{zipfile}\""
-  script << " -CompressionLevel #{level}" if level
+  script = <<~SCRIPT
+    $ErrorActionPreference = "Stop"
+    Compress-Archive -LiteralPath "#{file}" -DestinationPath "#{zipfile}" -CompressionLevel "#{level}"
+  SCRIPT
   puts "compress: #{file}"
   IO.popen(cmd, 'r+') do |io|
     io.puts script
