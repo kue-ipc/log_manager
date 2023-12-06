@@ -123,17 +123,6 @@ module LogManager
             end
           end
 
-          compressed_name = compressed_path(name)
-          if (local_file = local_dict[compressed_name])
-            if local_file[:ftype] != 'file'
-              log_warn("duplicate with other than file (compressed): #{name}")
-              next
-            elsif remote_file[:mtime] <= local_file[:mtime]
-              log_debug("skip a file (compressed): #{name}")
-              next
-            end
-          end
-
           log_info("copy: #{name}")
           cmd = [
             @scp_cmd,
