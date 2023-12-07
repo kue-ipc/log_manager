@@ -9,24 +9,28 @@ module LogManager
       end
 
       def run
+        start_time = Time.now
+        log_info("start: #{start_time}")
+        @result ||= {}
+        @result[:time] ||= {}
+        @result[:time][:start] = start_time
+
         log_info("root_dir: #{root_dir}")
-        time = Time.now
+        @result[:root_dir] = root_dir
+
         stat = Utils.disk_stat(root_dir)
         log_info("root_path: #{stat.root_path}")
+        @result[:disk_path] = stat.root_path
 
-        block = stat.block&.merge({usage: stat.block_usage})
-        check_block(block)
+        @result[:block] = stat.block&.merge({usage: stat.block_usage})
+        check_block(@result[:block])
 
-        inode = stat.inode&.merge({usage: stat.inode_usage})
-        check_inode(inode)
+        @result[:inode] = stat.inode&.merge({usage: stat.inode_usage})
+        check_inode(@result[:inode])
 
-        @result = {
-          time: time,
-          root_dir: root_dir,
-          disk_path: stat.root_path,
-          block: block,
-          inode: inode,
-        }
+        end_time = Time.now
+        @result[:time][:end] = end_time
+        log_info("end: #{end_time}")
 
         self
       end

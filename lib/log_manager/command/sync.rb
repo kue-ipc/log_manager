@@ -11,10 +11,18 @@ module LogManager
       # - sync
 
       def run
+        start_time = Time.now
+        log_info("start: #{start_time}")
         @result ||= {}
-        @result[:time] = {start: Time.now}
+        @result[:time] ||= {}
+        @result[:time][:start] = start_time
+
+        @result[:sync] ||= []
         all_sync
-        @result[:time] = {end: Time.now}
+
+        end_time = Time.now
+        @result[:time][:end] = end_time
+        log_info("end: #{end_time}")
 
         self
       end

@@ -13,20 +13,27 @@ module LogManager
       end
 
       def run
-        base_time = Time.now
+        start_time = Time.now
+        log_info("start: #{start_time}")
         @result ||= {}
-        @result[:time] = {
-          start: base_time,
+        @result[:time] ||= {}
+        @result[:time][:start] = start_time
+
+        base_time = start_time
+        time = {
+          base: base_time,
           delete: base_time - @config.dig(:clean, :period_retention),
           copmress: base_time - @config.dig(:clean, :period_nocompress),
         }
-        log_info("time: #{@result[:time].to_json}")
+        @result[:time].merge!(time)
+        log_info("time: #{time.to_json}")
 
-        @config.dig(:clean, :period_retention)
-        @config.dig(:clean, :period_nocompress)
-
+        @result[:count] ||= {}
         compress_and_delete(base_time: base_time)
-        @result[:time][:end] = Time.now
+
+        end_time = Time.now
+        @result[:time][:end] = end_time
+        log_info("end: #{end_time}")
 
         self
       end

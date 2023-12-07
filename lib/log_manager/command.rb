@@ -107,9 +107,9 @@ module LogManager
     def self.send_mail(results, config)
       result =
         if results.all?(&:success?)
-          'SUCCEEDED'
+          'SUCCESS'
         else
-          'FAILED'
+          'FAILURE'
         end
       date = Time.now.strftime('%Y-%m-%d')
       host = `hostname`.chomp
