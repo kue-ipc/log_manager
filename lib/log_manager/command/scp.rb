@@ -35,17 +35,11 @@ module LogManager
         raise Error, "Invalid remote path: #{path}"
       end
 
-      def sync(src, dst, includes: nil, excludes: nil)
+      def sync(src, dst, **_opts)
         check_path(dst)
         make_dir(dst)
 
-        count = {
-          copy: 0,
-          skip: 0,
-          excluded: 0,
-          other: 0,
-          error: 0,
-        }
+        count = {copy: 0, skip: 0, excluded: 0, other: 0, error: 0}
 
         remote_list = get_list_remote(src)
         local_list = get_list_local(dst)
@@ -56,42 +50,53 @@ module LogManager
         end
 
         remote_list.each do |remote_file|
-          next unless remote_file[:ftype] == 'file'
-
-          name = remote_file[:name]
-          if includes&.none? { |ptn| File.fnmatch?(ptn, name) } ||
-             excludes&.any? { |ptn| File.fnmatch?(ptn, name) }
-            count[:excluded] += 1
-          end
-
-          if (local_file = local_dict[name])
-            if local_file[:ftype] != 'file'
-              raise Error, "duplicate with other than file: #{name}"
-            elsif remote_file[:mtime] <= local_file[:mtime]
-              log_debug("skip a file: #{name}")
-              count[:skip] += 1
-              next
-            end
-          end
-
-          log_info("copy: #{name}")
-          cmd = [
-            scp_cmd,
-            '-p',
-            '-q',
-            "#{src.user}@#{src.hostname}:#{src.path}/#{name}",
-            "#{dst}/#{name}",
-          ]
-          _, _, status = run_cmd(cmd)
-          raise "failed to copy: #{name}" unless status.success?
-
-          count[:copy] += 1
-        rescue => e
-          err(e)
-          count[:error] += 1
+          local_file = local_dict[remote_file[:name]]
+          sync_result = remote_file_sync(src, dst, remote_file, local_file)
+          count[sync_result] += 1 if sync_result
         end
 
         count
+      end
+
+      def remote_file_sync(src, dst, remote_file, local_file,
+                           includes: nil, excludes: nil)
+        return unless remote_file[:ftype] == 'file'
+
+        name = remote_file[:name]
+
+        if includes&.none? { |ptn| File.fnmatch?(ptn, name) } ||
+           excludes&.any? { |ptn| File.fnmatch?(ptn, name) }
+          return :excluded
+        end
+
+        if local_file && local_file[:ftype] != 'file'
+          raise Error, "duplicate with other than file: #{name}"
+        end
+
+        if local_file && remote_file[:mtime] <= local_file[:mtime]
+          log_warn("skip a newer file: #{name}")
+          return :skip
+        end
+
+        scp_copy(src, dst, name)
+
+        :copy
+      rescue => e
+        err(e)
+        :error
+      end
+
+      def scp_copy(src, dst, name)
+        log_info("copy: #{name}")
+        cmd = [
+          scp_cmd,
+          '-p',
+          '-q',
+          "#{src.user}@#{src.hostname}:#{src.path}/#{name}",
+          "#{dst}/#{name}",
+        ]
+        _, _, status = run_cmd(cmd)
+        raise "failed to copy: #{name}" unless status.success?
       end
 
       def get_list_remote(uri)

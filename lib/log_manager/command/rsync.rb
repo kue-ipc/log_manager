@@ -27,7 +27,7 @@ module LogManager
         @rsync_cmd ||= command_dig(:cmd)
       end
 
-      def sync(src, dst, includes: nil, excludes: nil)
+      def sync(src, dst, **opts)
         check_path(dst)
         make_dir(dst)
 
@@ -35,6 +35,11 @@ module LogManager
         rsync_dst = dst
         rsync_src += '/' unless rsync_src.end_with?('/')
         rsync_dst += '/' unless rsync_dst.end_with?('/')
+
+        rsync(rsync_src, rsync_dst, **opts)
+      end
+
+      def rsync(rsync_src, rsync_dst, includes: nil, excludes: nil)
         raise Error, "invalid rsnyc src: #{rsync_src}" if rsync_src =~ /^-/
         raise Error, "invalid rsnyc dst: #{rsync_dst}" if rsync_dst =~ /^-/
 

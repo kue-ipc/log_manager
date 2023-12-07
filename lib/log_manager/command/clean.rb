@@ -131,32 +131,11 @@ module LogManager
           return
         end
 
-        if FileTest.file?(path)
-          if need_delete?(path, base_time: base_time)
-            log_debug("remove an expired file: #{path}")
-            remove_file(path)
-            count_up(:remove_file)
-          elsif need_compress?(path, base_time: base_time)
-            log_debug("compress an old file: #{path}")
-            compress_file(path)
-            count_up(:compress_file)
-          else
-            log_debug("skip a file: #{path}")
-            count_up(:skip_file)
-          end
-        elsif FileTest.directory?(path)
-          log_debug("enter a directory: #{path}")
-          Dir.each_child(path) do |e|
-            compress_and_delete(File.join(path, e), base_time: base_time)
-          end
-
-          if path != root_dir && Dir.empty?(path)
-            log_debug("remove an empty dir: #{path}")
-            remove_dir(path)
-            count_up(:remove_directory)
-          else
-            count_up(:check_directory)
-          end
+        case File.ftype(path)
+        when 'file'
+          compress_and_delete_file(path, base_time: base_time)
+        when 'directory'
+          compress_and_delete_directory(path, base_time: base_time)
         else
           log_info("skip an other type: #{path}")
           count_up(:other)
@@ -164,6 +143,38 @@ module LogManager
       rescue => e
         err(e)
         count_up(:error)
+      end
+
+      private def compress_and_delete_file(path, base_time: Time.now)
+        # must be file, no check
+        if need_delete?(path, base_time: base_time)
+          log_debug("remove an expired file: #{path}")
+          remove_file(path)
+          count_up(:remove_file)
+        elsif need_compress?(path, base_time: base_time)
+          log_debug("compress an old file: #{path}")
+          compress_file(path)
+          count_up(:compress_file)
+        else
+          log_debug("skip a file: #{path}")
+          count_up(:skip_file)
+        end
+      end
+
+      private def compress_and_delete_directory(path, base_time: Time.now)
+        # must be directory, no check
+        log_debug("enter a directory: #{path}")
+        Dir.each_child(path) do |e|
+          compress_and_delete(File.join(path, e), base_time: base_time)
+        end
+
+        if path != root_dir && Dir.empty?(path)
+          log_debug("remove an empty dir: #{path}")
+          remove_dir(path)
+          count_up(:remove_directory)
+        else
+          count_up(:check_directory)
+        end
       end
     end
   end
