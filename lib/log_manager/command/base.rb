@@ -119,8 +119,8 @@ module LogManager
       def run_cmd(cmd, noop: @noop)
         log_info("run: #{cmd.join(' ')}")
         if noop
-          log_debug('-- noop --')
-          return '', '', nil
+          log_debug('-- noop echo only --')
+          cmd = ['echo', *cmd]
         end
 
         stdout, stderr, status = Open3.capture3(*cmd)
