@@ -1,6 +1,4 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: true
-
 lib_path = File.expand_path('../lib', __dir__)
 $: << lib_path if FileTest.directory?(lib_path)
 

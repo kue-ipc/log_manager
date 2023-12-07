@@ -46,7 +46,7 @@ module LogManager
         save_dir: 'scp',
         hosts: [],
       },
-    }
+    }.freeze
 
     attr_reader :path, :log_file, :root_dir
 

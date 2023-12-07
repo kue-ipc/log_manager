@@ -99,7 +99,7 @@ module LogManager
 
         log_debug("get list from remote: #{uri}")
         remote = "#{uri.user}@#{uri.hostname}"
-        ls_cmd = REMOTE_LS + ' -- ' + uri.path
+        ls_cmd = "#{REMOTE_LS} -- #{uri.path}"
         cmd = [ssh_cmd, remote, ls_cmd]
         stdout, _, status = run_cmd(cmd, noop: false)
 
