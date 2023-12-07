@@ -19,6 +19,13 @@ module LogManager
         shift: 'weekly',
       },
 
+      mail: {
+        smtp: {
+          server: 'localhost',
+          port: 25,
+        },
+      },
+
       check: {
         block_threshold: 0.8,
         inode_threshold: 0.8,
@@ -37,14 +44,12 @@ module LogManager
       rsync: {
         cmd: 'rsync',
         save_dir: 'rsync',
-        hosts: [],
       },
 
       scp: {
         ssh_cmd: 'ssh',
         scp_cmd: 'scp',
         save_dir: 'scp',
-        hosts: [],
       },
     }.freeze
 
@@ -52,7 +57,7 @@ module LogManager
 
     def initialize(path)
       @path = path
-      @config = hash_deep_merge(DEFAULT_CONFIG, load_config)
+      @config = hash_deep_merge(DEFAULT_CONFIG, load_config || {})
 
       @root_dir = check_root_dir(@config[:root_dir])
 
@@ -73,11 +78,11 @@ module LogManager
     def_delegators :@logger, :fatal, :error, :warn, :info, :debug, :unknown
 
     private def check_root_dir(dir)
-      raise Error, 'root dir is not set' if dir.nil? || dir.empty?
+      raise Error, 'root_dir is not set or empty' if dir.nil? || dir.empty?
 
       path = File.expand_path(dir)
       unless FileTest.directory?(path)
-        raise Error, "root dir is not a directory: #{path}"
+        raise Error, "root_dir is not a directory: #{path}"
       end
 
       path

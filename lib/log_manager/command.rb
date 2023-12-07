@@ -116,7 +116,9 @@ module LogManager
       subject = "Log Manager [#{host}] {#{date}} #{result}"
 
       from = config.dig(:mail, :from)
-      to = Array(config.dig(:mail, :to))
+      to = Array(config.dig(:mail, :to)).compact
+      raise 'mail.from is not set or empty' if from.nil? || from.empty?
+      raise 'mail.to is not set or empty' if to.empty?
 
       message = <<~MESSAGE
         Log Manager

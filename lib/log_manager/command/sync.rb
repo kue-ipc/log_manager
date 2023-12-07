@@ -44,7 +44,7 @@ module LogManager
 
       def all_sync
         log_info('all sync')
-        command_dig(:hosts).each do |host|
+        command_dig(:hosts)&.each do |host|
           next if @host && ![host[:name], host[:host]].include?(@host)
 
           host_sync(**host)
